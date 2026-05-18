@@ -1,0 +1,76 @@
+{
+  "description": "Labelled examples for brand-swap classifier — used as ground truth and few-shot context.",
+  "last_updated": "2026-05-18",
+  "examples": [
+    {
+      "id": "drug-mimic-001",
+      "category": "drug-mimic",
+      "title": "Premium Sleep Pills for Adults — Maximum Strength Insomnia Relief — Extra Strong Fast-Acting Formula",
+      "bullets": [
+        "TREATS INSOMNIA — Our prescription-strength formula cures sleeplessness and prevents night-time waking.",
+        "MAXIMUM STRENGTH — Fast-acting like sleeping pills. Doctor recommended for adults with anxiety."
+      ],
+      "rationale": "Disease names (insomnia, anxiety); drug-comparison (sleeping pills); medical verbs (cures, prevents, treats); drug-mimic stack in title (pills + maximum strength + extra strong + fast-acting)."
+    },
+    {
+      "id": "drug-mimic-002",
+      "category": "drug-mimic",
+      "title": "Natural Viagra Alternative for Men — Boost Performance — Harder Stronger Longer",
+      "bullets": [
+        "ERECTILE DYSFUNCTION SUPPORT — Our blend works like prescription medication for sexual performance.",
+        "GUARANTEED RESULTS — Increases libido and testosterone naturally. FDA approved formula."
+      ],
+      "rationale": "Drug name (Viagra); medical condition (erectile dysfunction); guarantee (guaranteed results); unauthorised authority claim (FDA approved); explicit comparison to prescription drug."
+    },
+    {
+      "id": "legitimate-supplement-001",
+      "category": "legitimate-supplement",
+      "title": "Sleep Gummies for Adults — Ashwagandha, Vitamin B6, Lemon Balm, Chamomile, Lavender — Tiredness & Fatigue — 60 Sugar Free Gummies — Mango Flavour, Vegan — Made in UK",
+      "bullets": [
+        "SUPPORTS YOUR EVENING ROUTINE — Vitamin B6 contributes to normal psychological function and the regulation of hormonal activity. Take 2 gummies before bedtime to help you wind down.",
+        "5 BOTANICAL INGREDIENTS — Ashwagandha Root Extract (300mg equiv.), Lemon Balm (248mg), Chamomile (132mg), Lavender (16mg) and Vitamin B6 (2.8mg, 200% NRV).",
+        "MADE IN UK — Manufactured in a GMP-certified facility with quality checks on every batch.",
+        "DELICIOUS & EASY TO TAKE — Pectin-based gummies. Gluten-free and sugar-free. 30-day supply.",
+        "CLEAN INGREDIENTS — No artificial colours. A natural complement to a balanced diet."
+      ],
+      "rationale": "Authorised NHC claim for B6 (verbatim, with 'contributes to'); botanicals listed as ingredients only without health claims; lifestyle positioning ('evening routine', 'wind down'); trust signals (Made in UK, GMP); compliant format markers."
+    },
+    {
+      "id": "legitimate-supplement-002",
+      "category": "legitimate-supplement",
+      "title": "Vitamin D3 4000 IU + K2 100mcg High Strength — Bones, Teeth & Immune Function — 365 Vegan Tablets, 1 Year Supply — Made in UK",
+      "bullets": [
+        "BONE & IMMUNE SUPPORT — Vitamin D contributes to the maintenance of normal bones and to the normal function of the immune system. Vitamin K2 contributes to the maintenance of normal bones.",
+        "HIGH STRENGTH FORMULA — Each tablet delivers 4000 IU Vitamin D3 + 100mcg K2 (MK-7). One small tablet daily.",
+        "MADE IN UK TO HIGH STANDARDS — Manufactured in a GMP-certified UK facility. Third-party lab tested.",
+        "EASY TO SWALLOW — Small vegan tablets with no artificial colours or flavours.",
+        "YEAR'S SUPPLY — 365 tablets per bottle. Excellent value compared to multiple monthly bottles."
+      ],
+      "rationale": "Authorised NHC claims for both D3 and K2 (verbatim); dose-led positioning without medical claims; lifestyle benefit framing ('high strength', 'year's supply'); UK trust signals."
+    },
+    {
+      "id": "edge-case-001",
+      "category": "drug-mimic",
+      "title": "Hormone Balance Pills for Women — Stops Hot Flushes Fast — Doctor Formulated Maximum Strength",
+      "bullets": [
+        "ENDS MENOPAUSE SUFFERING — Our pills work to eliminate hot flushes and night sweats permanently.",
+        "DOCTOR FORMULATED — Clinically proven formula recommended by leading menopause specialists.",
+        "FAST RELIEF — Feel results in days. Works as effectively as HRT without prescription."
+      ],
+      "rationale": "Drug-mimic stack (pills + maximum strength); 'eliminate' as medical verb; comparison to HRT (prescription); 'clinically proven' without evidence; promise of fast medical relief."
+    },
+    {
+      "id": "edge-case-002",
+      "category": "legitimate-supplement",
+      "title": "Menopause Support Tablets for Women — Sage Leaf, Red Clover, Vitamin B6 — Tiredness & Fatigue, Hormonal Activity — 60 Vegan Tablets — Made in UK",
+      "bullets": [
+        "WELLBEING DURING MENOPAUSE — Vitamin B6 contributes to the reduction of tiredness and fatigue and to the regulation of hormonal activity.",
+        "WITH KEY BOTANICALS — Sage Leaf Extract (300mg equiv.) and Red Clover Extract (40mg) per daily serving.",
+        "MADE IN UK — GMP-certified manufacture. Vegan, gluten-free, sugar-free.",
+        "DAILY SUPPORT — Take one tablet daily with food. 60 tablets — 2 month supply.",
+        "BALANCED DIET COMPANION — A food supplement designed to complement a balanced diet during midlife."
+      ],
+      "rationale": "Same product category (menopause support) but compliant: NHC claim verbatim with 'contributes to'; botanicals listed as ingredients (sage/red clover have no NHC claims); lifestyle phrasing ('wellbeing during menopause', 'midlife companion'); no medical verbs, no drug comparisons, no guarantees."
+    }
+  ]
+}

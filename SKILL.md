@@ -1,13 +1,15 @@
 ---
 name: amazon-uk-vitamin-listing
 description: End-to-end Amazon UK food supplement workflow — validates packaging labels (vision-based) against UK FIC + 2002/46/EC + GB NHC Register, creates SEO-optimised compliant listings (title/bullets/description/backend), and analyses keyword CSVs (Helium 10, ZonGuru, Brand Analytics) into prioritised placement maps. Covers vitamins, minerals, sleep botanicals, omega-3, probiotics, multivitamins, sports supplements, sex/men's vitality. Use when user says "проверь этикетку", "label check", "правки для дизайнера", "создай листинг", "напиши листинг", "Amazon UK листинг", "vitamin listing", "supplement listing", "проанализируй ключевики", "keyword map", "листинг витаминов", "label validation", "UK FIC compliance", "food supplement label", "supplement compliance".
-version: "1.1.0"
+version: "1.2.0"
 last_updated: "2026-05-18"
 ---
 
 # Amazon UK Vitamin & Supplement Listing — Label Check + Listing + Keywords
 
-> **Версия:** 1.1.0 (2026-05-18) — added validators.py, golden tests, brand profiles, Vision prompting checklist, "When in doubt" decision tree.
+> **Версия:** 1.2.0 (2026-05-18) — added empirical risk-budget extractor (n-gram analysis), Claude Haiku brand-swap judge, JSONL audit log, image-brief generator for 7-slot product photography, menopause category corpus + Vitgem brand profile.
+>
+> **Версия 1.1.0** (2026-05-18) — added validators.py, golden tests, brand profiles, Vision prompting checklist, "When in doubt" decision tree.
 >
 > **Data freshness:** все compliance-данные (GB NHC Register, FIC regulations, ASA precedents) — snapshot на 2026-05. Перед production listing launch проверяй актуальный текст regulations на legislation.gov.uk и live GB NHC Register на gov.uk. См. footer-блок ["Источники"](#источники) в конце каждого reference-файла.
 
@@ -396,26 +398,120 @@ Priority Score = (SV × 0.30) + (Sales × 0.25) + (Competition_inv × 0.20) + (R
 ~/.claude/skills/amazon-uk-vitamin-listing/
 ├── SKILL.md                          ← вы здесь (mode dispatcher)
 ├── README.md                         ← installation + overview
-├── validators.py                     ← Python validators (title/bullets/backend/dedup/full)
+├── validators.py                     ← hard-limit validators (title/bullets/backend/dedup/full)
+├── brand_swap_judge.py               ← Claude Haiku-based brand-swap test (~$0.0001/verify)
+├── audit_log.py                      ← JSONL append-only audit log (append/query/summary/tail)
+├── image_brief.py                    ← 7-slot image brief generator for product photography
 ├── references/
-│   ├── compliance-rules.md           ← UK red/yellow/green flags + Amazon limits + 15-point checklist + decision tree
+│   ├── compliance-rules.md           ← UK red/yellow/green flags + 15-point checklist + decision tree
 │   ├── claims-database.md            ← GB NHC Register (25 ингредиентов) + safe claims по 9 категориям
 │   ├── label-requirements.md         ← UK FIC + 2002/46/EC + 12-point label audit
 │   ├── listing-templates.md          ← Title/Bullets/Description/Backend formulas + примеры
 │   ├── keyword-analysis.md           ← CSV schemas + scoring formula + tier allocation
-│   └── output-templates.md           ← точные форматы output для LABEL_CHECK / LISTING_CREATE / KEYWORD_MAP
+│   ├── output-templates.md           ← точные форматы output для всех трёх режимов
+│   ├── brand-swap-corpora.json       ← labelled examples для brand-swap judge (drug-mimic vs legit)
+│   ├── image-specifications.md       ← Amazon UK image требования + 7 slot patterns
+│   └── empirical-risk-budget-*.md    ← auto-generated per category (run refresh_risk_budget.py)
+├── tools/
+│   └── refresh_risk_budget.py        ← n-gram analysis competitor corpus → empirical risk-budget
+├── data/
+│   └── menopause-corpus-2026-05-17/  ← seed corpus (13 menopause survivors with bullets + ingredients)
+│       ├── README.md
+│       └── competitors.json
 ├── brands/
 │   ├── README.md                     ← как использовать brand profiles
 │   ├── _template.md                  ← шаблон для нового бренда
-│   └── meleva.md                     ← реальный профиль Meleva British Wellness
+│   ├── meleva.md                     ← Meleva Night-Time Gummies (sleep)
+│   └── vitgem-menopause.md           ← Vitgem Menopause Gummies (планируемый launch)
 └── tests/
-    ├── README.md                     ← как добавить новый golden test case
-    ├── case-01-meleva-night-time-pass/      (input.json + expected_output.md)
-    ├── case-02-bad-cures-insomnia/          (adversarial — должен FAIL)
-    ├── case-03-bad-title-over-200/          (regression test для title limit)
-    ├── case-04-bad-backend-over-249/        (regression test для backend deindexation)
-    └── case-05-bad-ashwagandha-claim/       (regression test для botanical claims)
+    ├── README.md
+    ├── case-01-meleva-night-time-pass/      (real production listing → SAFE TO PUBLISH)
+    ├── case-02-bad-cures-insomnia/          (adversarial)
+    ├── case-03-bad-title-over-200/          (title limit regression)
+    ├── case-04-bad-backend-over-249/        (backend deindexation regression)
+    └── case-05-bad-ashwagandha-claim/       (botanical claim regression)
 ```
+
+## Use cases новых модулей v1.2.0
+
+### Empirical risk-budget (n-gram analysis)
+
+Что: считает frequency каждой 1-3-граммы в surviving competitor listings, выдаёт buckets SAFE/COMMON/RARE/UNIQUE/RISKY с per-phrase usage rate.
+
+Когда использовать:
+- **Перед launch в новой категории** — собрать corpus (10-50 живых конкурентов) → запустить → получить data-driven списки безопасных и рискованных фраз
+- **Перед refresh listing** — sanity-check что используемые фразы не drift'нули из SAFE в RARE
+
+```bash
+# Стартовый сценарий с готовым menopause corpus
+python3 tools/refresh_risk_budget.py \
+  --corpus data/menopause-corpus-2026-05-17/competitors.json \
+  --category menopause
+
+# Output: references/empirical-risk-budget-menopause.md
+```
+
+Для своей категории:
+1. Скрейпь top-30 surviving competitors (через Helium 10 Xray + ручной agent-browser для bullets)
+2. Положи в `data/<category>-corpus-<date>/competitors.json` по схеме `data/menopause-corpus-2026-05-17/README.md`
+3. Запусти `refresh_risk_budget.py`
+
+### Brand-swap judge (Claude Haiku, $0.0001/verify)
+
+Что: классифицирует draft листинг как `drug-mimic` или `legitimate-supplement` после удаления бренда. Семантический test поверх лексических hard rules.
+
+Требует: `ANTHROPIC_API_KEY` env var. Без ключа → возвращает `ADVISORY` (не блокирует).
+
+```bash
+python3 brand_swap_judge.py \
+  --brand "Vitgem" \
+  --title "Vitgem Menopause Gummies — Sage + KSM-66® — Hormonal Activity — 60 Sugar Free Gummies" \
+  --bullets bullet1.txt bullet2.txt bullet3.txt bullet4.txt bullet5.txt \
+  --json
+
+# Output: {"category": "legitimate-supplement", "confidence": 0.92, "reasoning": "..."}
+# Verdict: PASS
+```
+
+### Audit log (JSONL)
+
+Что: append-only log всех verdicts. PII-scrubbed (brand → hash). Для retrospective analysis типа "какой процент LISTING_CREATE прошёл с первого раза за последний месяц?".
+
+```bash
+# Append verdict
+python3 audit_log.py append --mode LISTING_CREATE --verdict "SAFE TO PUBLISH" \
+  --brand "Meleva" --product "Night-Time Gummies" --score 15 --score-max 15
+
+# Summary за 30 дней
+python3 audit_log.py summary --days 30
+
+# Last 20 verdicts
+python3 audit_log.py tail --n 20
+```
+
+Лог пишется в `~/.amazon-uk-vitamin-listing-audit.jsonl` (или `$LAMBA_AUDIT_LOG`).
+
+### Image brief generator
+
+Что: генерирует 7 структурированных image briefs (Main + Infographic Ingredients + Benefits + Lifestyle + Quality + How-to-use + Size/Scale) с prompts для передачи в `/blog image` или `/fal-ai-media` skill, либо дизайнеру.
+
+```bash
+# Quick start
+python3 image_brief.py --brand "Vitgem" --product-name "Menopause Gummies" --category menopause
+
+# Или через JSON spec
+python3 image_brief.py --product-spec spec.json --output briefs/vitgem/
+```
+
+Output структура брифа (на каждый slot):
+- `subject` — что показать
+- `action` — что происходит
+- `context` — где / какой background
+- `composition` — расположение элементов
+- `lighting` — освещение
+- `style` — стиль (photoreal / infographic / lifestyle)
+- `prompt_template` — готовая строка для image-generation MCP
+- `amazon_requirement` (для main slot) — точные технические требования Amazon UK
 
 ## Использование validators.py
 
