@@ -66,8 +66,8 @@ End-to-end workflow для Amazon UK food supplements. Три режима в о
 
 Дополнительно по режиму:
 - LABEL_CHECK → `references/label-requirements.md`
-- LISTING_CREATE → `references/listing-templates.md` + `references/output-templates.md`
-- KEYWORD_MAP → `references/keyword-analysis.md` + `references/output-templates.md`
+- LISTING_CREATE → `references/listing-templates.md` + `references/output-templates.md` + `references/scraping-playbook.md` (competitor research)
+- KEYWORD_MAP → `references/keyword-analysis.md` + `references/output-templates.md` + `references/scraping-playbook.md` (data sourcing)
 
 ---
 
@@ -408,6 +408,7 @@ Priority Score = (SV × 0.30) + (Sales × 0.25) + (Competition_inv × 0.20) + (R
 │   ├── label-requirements.md         ← UK FIC + 2002/46/EC + 12-point label audit
 │   ├── listing-templates.md          ← Title/Bullets/Description/Backend formulas + примеры
 │   ├── keyword-analysis.md           ← CSV schemas + scoring formula + tier allocation
+│   ├── scraping-playbook.md          ← что/чем/когда скрапить — Amazon UK + H10 + Cerebro workflow
 │   ├── output-templates.md           ← точные форматы output для всех трёх режимов
 │   ├── brand-swap-corpora.json       ← labelled examples для brand-swap judge (drug-mimic vs legit)
 │   ├── image-specifications.md       ← Amazon UK image требования + 7 slot patterns
