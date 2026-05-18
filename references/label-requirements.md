@@ -1,6 +1,15 @@
 # UK Food Supplement Label Requirements — Full Audit Reference
 
-> **Источники:** UK Food Information Regulations 2014 (FIC, retained EU Reg. 1169/2011), UK Food Supplements Directive 2002/46/EC (retained), Trading Standards guidance, FSA Food Labelling Guide.
+> **Last verified:** 2026-05
+> **Источники (для верификации):**
+> - [Food Information Regulations 2014 / Reg. 1169/2011 (retained)](https://www.legislation.gov.uk/eur/2011/1169/contents) — обязательная информация на этикетке
+> - [Food Supplements (England) Regulations 2003](https://www.legislation.gov.uk/uksi/2003/1387/contents/made) — UK-specific food supplement rules
+> - [FSA Food Labelling Guide](https://www.food.gov.uk/business-guidance/packaging-and-labelling) — практические указания
+> - [Trading Standards — labelling guidance](https://www.businesscompanion.info/en/quick-guides/food-and-drink/food-labelling)
+> - [Commission Reg. 1924/2006 — nutrition and health claims](https://www.legislation.gov.uk/eur/2006/1924/contents) — основа для "sugar-free", "low-fat" wording
+> - [Reg. 1333/2008 — food additives functional classes](https://www.legislation.gov.uk/eur/2008/1333/annex/I) — Annex I: classes (Sweetener, Humectant, Glazing Agent, etc.)
+>
+> **Disclaimer:** Labelling regulations adopted post-Brexit могут отличаться между England, Scotland, Wales, Northern Ireland (Windsor Framework). Этот файл фокусируется на **GB rules**. Для NI listings — verify дополнительно.
 
 ---
 

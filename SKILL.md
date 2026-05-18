@@ -1,9 +1,15 @@
 ---
 name: amazon-uk-vitamin-listing
 description: End-to-end Amazon UK food supplement workflow — validates packaging labels (vision-based) against UK FIC + 2002/46/EC + GB NHC Register, creates SEO-optimised compliant listings (title/bullets/description/backend), and analyses keyword CSVs (Helium 10, ZonGuru, Brand Analytics) into prioritised placement maps. Covers vitamins, minerals, sleep botanicals, omega-3, probiotics, multivitamins, sports supplements, sex/men's vitality. Use when user says "проверь этикетку", "label check", "правки для дизайнера", "создай листинг", "напиши листинг", "Amazon UK листинг", "vitamin listing", "supplement listing", "проанализируй ключевики", "keyword map", "листинг витаминов", "label validation", "UK FIC compliance", "food supplement label", "supplement compliance".
+version: "1.1.0"
+last_updated: "2026-05-18"
 ---
 
 # Amazon UK Vitamin & Supplement Listing — Label Check + Listing + Keywords
+
+> **Версия:** 1.1.0 (2026-05-18) — added validators.py, golden tests, brand profiles, Vision prompting checklist, "When in doubt" decision tree.
+>
+> **Data freshness:** все compliance-данные (GB NHC Register, FIC regulations, ASA precedents) — snapshot на 2026-05. Перед production listing launch проверяй актуальный текст regulations на legislation.gov.uk и live GB NHC Register на gov.uk. См. footer-блок ["Источники"](#источники) в конце каждого reference-файла.
 
 End-to-end workflow для Amazon UK food supplements. Три режима в одном навыке:
 
@@ -81,18 +87,64 @@ End-to-end workflow для Amazon UK food supplements. Три режима в о
 
 ### Шаг 1: OCR / Извлечение содержимого этикетки
 
-Если приложен JPG/PNG/PDF — открыть через `Read`. Извлечь и зафиксировать **все** текстовые элементы:
+Если приложен JPG/PNG/PDF — открыть через `Read`. Если качество фото плохое — сразу запросить лучшее изображение или manufacturer spec в текстовом виде.
 
-- Лицевая сторона: brand name, product name, legal name ("Food Supplement"), flavour, sweetener declaration, count/net weight, key trust badges
-- Nutritional Information / Supplement Facts: ингредиенты, дозировки per serving, % NRV, equiv. ratios
-- Ingredients list: полный список с функциональными классами в скобках (Sweetener, Humectant, Glazing Agent, Acidity Regulator, etc.)
-- Allergen Information: аллергены жирным/CAPS
-- Suggested Use / Directions
-- Storage / "Best Before"
-- Batch / Lot number
-- FBO: имя + полный UK-адрес
-- "Made in UK" / "Produced in UK" / "Produced for"
-- Badges/Certificates: Vegan, Sugar Free, GMO Free, Gluten Free, GMP, Halal, Kosher
+**Vision prompting checklist — пройти по каждому пункту явно, не пропускать:**
+
+1. **Лицевая сторона (Front-of-Pack):**
+   - Brand name — точный текст, capitalization
+   - Product name — точный текст
+   - **Legal name** "Food Supplement" — присутствует? Отдельной строкой? Шрифт читаем?
+   - Flavour descriptor — точная формулировка ("Natural Mango Flavour" / "Mango Flavoured")
+   - **Sweetener declaration** "with Sweeteners" / "with Sugar and Sweeteners" — присутствует?
+   - Count + Net Weight — точные числа
+   - Trust badges на лицевой — список всех (Vegan, Sugar Free, GMO Free, Gluten Free, etc.)
+
+2. **Nutritional Information / Supplement Facts:**
+   - Serving size text — verbatim
+   - Servings per container
+   - Для каждого active ingredient: точное название, доза per serving, **% NRV**, equiv. (если extract с ratio)
+   - Сноска "† NRV not established" присутствует?
+   - **Не пропускать слово "powder"** в equiv. — это типичная ошибка
+
+3. **Ingredients list:**
+   - Слово "Ingredients:" присутствует?
+   - Полный список verbatim — точно как написано на этикетке
+   - **Функциональный класс у каждого** в скобках или после двоеточия (Sweetener / Humectant / Glazing Agent / Acidity Regulator / Colour / Gelling Agent)
+   - Проверить аббревиатуры (MCT, ACV) — должны быть полными названиями
+   - Порядок ингредиентов — verbatim, не сортировать
+
+4. **Allergen Information:**
+   - Точный текст блока allergen info
+   - Какие allergens выделены **жирным**, КАПСОМ, подчёркиванием?
+   - Проверить против 14 mandatory allergens (см. `label-requirements.md`)
+
+5. **Suggested Use / Directions:**
+   - Точная дозировка
+   - Timing (e.g. "before bedtime", "with food")
+   - Phrase "Do not exceed the stated recommended daily dose" присутствует?
+
+6. **Storage / "Best Before":**
+   - Storage text verbatim
+   - BBE формат (MM/YYYY)
+   - Batch / Lot number
+
+7. **FBO (Food Business Operator):**
+   - Имя компании (с Ltd / LLP / PLC)
+   - **Полный** UK address с postcode
+   - "Produced in UK" / "Made in UK" / "Produced for" — точная формулировка
+
+8. **Warnings:**
+   - 3 mandatory UK warnings — каждое присутствует verbatim?
+   - Pregnancy advisory?
+   - Дополнительные предупреждения (caffeine, drowsiness)?
+
+9. **Что вызывает сомнения:**
+   - Текст не читается чётко → отметить как "uncertain, requires verification"
+   - Шрифт мелкий / контраст слабый → отметить как accessibility issue
+   - Цвета смазаны → запросить higher-res file
+
+**После извлечения** — выписать всё содержимое в структурированный список в response (чтобы пользователь мог verify что OCR прошёл корректно), и только потом начинать audit.
 
 ### Шаг 2: 12-point UK compliance audit
 
@@ -342,12 +394,81 @@ Priority Score = (SV × 0.30) + (Sales × 0.25) + (Competition_inv × 0.20) + (R
 
 ```
 ~/.claude/skills/amazon-uk-vitamin-listing/
-├── SKILL.md                          ← вы здесь
-└── references/
-    ├── compliance-rules.md           ← UK red/yellow/green flags + Amazon limits + 15-point checklist
-    ├── claims-database.md            ← GB NHC Register (22+ ингредиентов) + safe claims по категориям
-    ├── label-requirements.md         ← UK FIC + 2002/46/EC + 12-point label audit
-    ├── listing-templates.md          ← Title/Bullets/Description/Backend formulas + примеры
-    ├── keyword-analysis.md           ← CSV schemas + scoring formula + tier allocation
-    └── output-templates.md           ← точные форматы output для LABEL_CHECK / LISTING_CREATE / KEYWORD_MAP
+├── SKILL.md                          ← вы здесь (mode dispatcher)
+├── README.md                         ← installation + overview
+├── validators.py                     ← Python validators (title/bullets/backend/dedup/full)
+├── references/
+│   ├── compliance-rules.md           ← UK red/yellow/green flags + Amazon limits + 15-point checklist + decision tree
+│   ├── claims-database.md            ← GB NHC Register (25 ингредиентов) + safe claims по 9 категориям
+│   ├── label-requirements.md         ← UK FIC + 2002/46/EC + 12-point label audit
+│   ├── listing-templates.md          ← Title/Bullets/Description/Backend formulas + примеры
+│   ├── keyword-analysis.md           ← CSV schemas + scoring formula + tier allocation
+│   └── output-templates.md           ← точные форматы output для LABEL_CHECK / LISTING_CREATE / KEYWORD_MAP
+├── brands/
+│   ├── README.md                     ← как использовать brand profiles
+│   ├── _template.md                  ← шаблон для нового бренда
+│   └── meleva.md                     ← реальный профиль Meleva British Wellness
+└── tests/
+    ├── README.md                     ← как добавить новый golden test case
+    ├── case-01-meleva-night-time-pass/      (input.json + expected_output.md)
+    ├── case-02-bad-cures-insomnia/          (adversarial — должен FAIL)
+    ├── case-03-bad-title-over-200/          (regression test для title limit)
+    ├── case-04-bad-backend-over-249/        (regression test для backend deindexation)
+    └── case-05-bad-ashwagandha-claim/       (regression test для botanical claims)
 ```
+
+## Использование validators.py
+
+Python скрипт для **детерминированной** проверки hard limits (вместо "на глаз"):
+
+```bash
+# Проверка только title
+python3 ~/.claude/skills/amazon-uk-vitamin-listing/validators.py title "Your title text here"
+
+# Полная проверка через JSON
+python3 ~/.claude/skills/amazon-uk-vitamin-listing/validators.py full listing.json
+# JSON shape: {"title": str, "bullets": [str x 5], "backend": str, "description": str}
+
+# Прогон golden test
+python3 ~/.claude/skills/amazon-uk-vitamin-listing/validators.py full \
+  ~/.claude/skills/amazon-uk-vitamin-listing/tests/case-01-meleva-night-time-pass/input.json
+```
+
+Выходные коды: `0` = PASS, `1` = FAIL, `2` = usage error. Подходит для CI/automation.
+
+## Использование brand profiles
+
+Если бренд упомянут в запросе — скил загружает `brands/<brand-name>.md` для подмены defaults:
+- forbidden_combos (zero-tolerance phrases)
+- mandatory certifications в каждом листинге
+- predefined claim strategy (через какие ингредиенты строить health claims)
+
+Если бренд новый — скил предлагает скопировать `brands/_template.md`, заполнить, сохранить.
+
+## Golden test regression check
+
+Перед merge правок в `compliance-rules.md` или `claims-database.md`:
+
+```bash
+cd ~/.claude/skills/amazon-uk-vitamin-listing/tests
+for case in case-*/input.json; do
+  echo "=== $case ==="
+  python3 ../validators.py full "$case" 2>&1 | tail -3
+done
+```
+
+Ожидается:
+- case-01 → `VERDICT: SAFE TO PUBLISH`
+- case-02, 03, 04, 05 → `VERDICT: NEEDS FIXES`
+
+Если case-01 начинает FAIL — это **regression bug**.
+
+## Источники / Verification
+
+Все compliance-данные имеют **last verified date** и URL источника в header каждого reference-файла. Перед production launch — проверяй live регуляции:
+- [GB Nutrition and Health Claims Register](https://www.gov.uk/government/publications/great-britain-nutrition-and-health-claims-nhc-register)
+- [Food Information Regulations 2014](https://www.legislation.gov.uk/uksi/2014/1855/contents/made)
+- [Food Supplements Regulations 2003](https://www.legislation.gov.uk/uksi/2003/1387/contents/made)
+- [ASA Rulings](https://www.asa.org.uk/codes-and-rulings/rulings.html)
+- [MHRA Herbal Medicines](https://www.gov.uk/government/collections/herbal-medicines-regulation-in-the-uk)
+- [Amazon UK Selling Policies](https://sellercentral.amazon.co.uk/help/hub/reference/G201833410)

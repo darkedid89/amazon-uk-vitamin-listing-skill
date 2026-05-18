@@ -1,7 +1,10 @@
 # GB Nutrition and Health Claims Register — Authorised Claims Database
 
-> **Источник:** GB Nutrition and Health Claims Register (gov.uk). Все claims в этом файле — verbatim или ASA-approved adaptations (`supports`, `helps maintain`).
-> **Принцип:** Если ингредиента нет в этой базе с авторизованным claim — описывать только как ингредиент, без health claims.
+> **Last verified:** 2026-05 (claims из GB NHC Register snapshot)
+> **Source authority:** [GB Nutrition and Health Claims Register](https://www.gov.uk/government/publications/great-britain-nutrition-and-health-claims-nhc-register) — gov.uk
+> **Update cadence:** GB NHC Register обновляется periodically (FSA + DHSC). Проверяй live перед launch новых формул.
+> **All claims** в этом файле — verbatim из Register или ASA-approved adaptations (`supports`, `helps maintain`, `helps keep`, `plays a role in`, `to support`).
+> **Принцип:** Если ингредиента нет в этой базе с авторизованным claim — описывать только как ингредиент, БЕЗ health claims.
 
 ---
 
@@ -345,17 +348,19 @@
 
 → Только descriptive: "contains [X] billion CFU per serving", "live cultures", "designed for daily use"
 
-### Banned / restricted UK
+### Banned / restricted UK (verify before listing)
 
-⛔ **Melatonin** — POM (prescription-only medicine), MHRA. ЗАПРЕЩЕНО продавать как supplement в UK.
-⛔ **5-HTP** — серая зона, серьёзная caution
-⛔ **L-Tryptophan** — серая зона
-⛔ **Yohimbe / Yohimbine** — BANNED как supplement (POM)
-⛔ **DMAA (1,3-dimethylamylamine)** — BANNED
-⛔ **Ephedra / Ephedrine** — BANNED
-⛔ **Kratom (Mitragyna speciosa)** — BANNED
-⛔ **DHEA** — BANNED как supplement (POM)
-⛔ **Ipriflavone** — BANNED
+⛔ **Melatonin** — POM (prescription-only medicine), MHRA. ЗАПРЕЩЕНО продавать как supplement в UK. Источник: MHRA Public Assessment Report.
+⚠️ **5-HTP** — **legal to sell as food supplement в UK** (не POM). НО: ASA enforcement против любых mood/depression/sleep claims. Допустимо описательно. Часто block'ается Amazon UK даже когда legal.
+⚠️ **L-Tryptophan** — серая зона; в больших дозах рассматривается как medicinal. Caution.
+⛔ **Yohimbe / Yohimbine** — банируется FSA как unsafe novel food (нет authorisation). Не путать с yohimbine HCl, который может быть POM.
+⛔ **DMAA (1,3-dimethylamylamine)** — BANNED (MHRA classification как medicinal product, 2012)
+⛔ **Ephedra / Ephedrine** — restricted (Misuse of Drugs Act + MHRA)
+⛔ **Kratom (Mitragyna speciosa)** — under review, multiple FSA warnings. Amazon UK не разрешает листинг.
+⛔ **DHEA** — POM в UK (не продаётся как supplement)
+⛔ **Ipriflavone** — POM в UK
+
+> **Важно:** список banned/restricted ингредиентов меняется регулярно. **Всегда** проверяй актуальный статус через FSA Food Standards (food.gov.uk) и MHRA Yellow Card перед launch нового продукта с экзотическим ингредиентом.
 
 ---
 

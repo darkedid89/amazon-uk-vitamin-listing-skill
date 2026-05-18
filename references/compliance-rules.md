@@ -1,6 +1,15 @@
 # UK Food Supplement Compliance — Red/Yellow/Green Flags
 
-> **Источники:** UK Food Supplements Directive 2002/46/EC, FIC Reg. 1169/2011 (retained), GB Nutrition and Health Claims Register, ASA rulings, MHRA guidance, Amazon UK Selling Policy.
+> **Last verified:** 2026-05
+> **Источники (для верификации):**
+> - [UK Food Supplements (England) Regulations 2003](https://www.legislation.gov.uk/uksi/2003/1387/contents/made) (transposes Directive 2002/46/EC)
+> - [Food Information Regulations 2014](https://www.legislation.gov.uk/uksi/2014/1855/contents/made) (retained Reg. 1169/2011)
+> - [GB Nutrition and Health Claims Register](https://www.gov.uk/government/publications/great-britain-nutrition-and-health-claims-nhc-register)
+> - [ASA Rulings database](https://www.asa.org.uk/codes-and-rulings/rulings.html) — search by company name / sector
+> - [MHRA herbal medicines guidance](https://www.gov.uk/government/collections/herbal-medicines-regulation-in-the-uk)
+> - [Amazon UK Selling Policies — Food Supplements](https://sellercentral.amazon.co.uk/help/hub/reference/G201833410)
+>
+> **Disclaimer:** Регуляции и ASA enforcement меняются. Перед production launch — verify актуальный текст regulations через legislation.gov.uk.
 
 ---
 
@@ -88,9 +97,11 @@
 
 ### Critical ASA precedent — "contributes to"
 
-ASA ruled (Novomins case 2024): **пропуск "contributes to"** перед NHC claim делает claim **misleading**.
+ASA enforcement pattern: пропуск "contributes to" (или equivalent approved adaptation) перед NHC claim делает claim **misleading и subject to ASA action**. Это long-standing principle, подтверждён множеством рулингов против supplement брендов в UK.
 - ❌ "Vitamin B6 for tiredness and fatigue" — пропущен `contributes to the reduction of`
 - ✅ "Vitamin B6 contributes to the reduction of tiredness and fatigue"
+
+> **Verify:** конкретные precedent кейсы — [ASA Rulings database](https://www.asa.org.uk/codes-and-rulings/rulings.html), search "vitamin", "supplement", "food supplement".
 
 **Допустимые адаптации** (ASA-approved):
 - `contributes to` — стандарт NHC
@@ -200,6 +211,55 @@ ASA ruled (Novomins case 2024): **пропуск "contributes to"** перед N
 
 ---
 
+## "When in doubt" — Decision Tree
+
+Используй когда **не уверен** допустим ли claim или формулировка.
+
+```
+Q1: Это health claim (упоминание о пользе для здоровья)?
+    NO  → описательно / lifestyle → SAFE (продолжить)
+    YES → Q2
+
+Q2: Claim verbatim из GB NHC Register или с approved adaptation (supports/helps maintain)?
+    NO  → STOP. Не использовать. Заменить на lifestyle phrase или удалить.
+    YES → Q3
+
+Q3: Привязан к конкретному ингредиенту с достаточной дозой?
+    (Например, "Vitamin C contributes to immune function" требует Vit C минимум 12mg = 15% NRV per serving)
+    NO  → STOP. Не использовать.
+    YES → Q4
+
+Q4: "contributes to" присутствует?
+    NO  → ADD "contributes to" / "supports" / "helps maintain" обязательно.
+    YES → Q5
+
+Q5: Есть ли в формулировке RED FLAG слова (cure, treat, prevent, disease names)?
+    YES → STOP. Rewrite без них.
+    NO  → Q6
+
+Q6: Это сравнение (best / #1 / most / leading / strongest)?
+    YES → STOP. Удалить или заменить на subjective (premium, high-strength).
+    NO  → Q7
+
+Q7: British English? (flavour не flavor, food supplement не dietary supplement)
+    NO  → Fix spelling.
+    YES → ✅ SAFE — claim допустим.
+```
+
+### Когда верить скилу vs верить юристу
+
+| Сценарий | Доверять только скилу | Дополнительный review |
+|---|---|---|
+| Базовый витамин (D3, B12, magnesium) с NHC claim | Да | — |
+| Composite product с 3+ ингредиентами без NHC | Скил даёт baseline | Желательно legal review перед launch |
+| Botanical extract с claim "on hold" | Нет — скил отказывает | Не запускать |
+| Sex / men's vitality / mood / cognition | Скил даёт baseline | **Обязательно** legal review |
+| Probiotics со здоровьем кишечника | Нет — скил отказывает | Не использовать health claims вообще |
+| Mass-production print run | Скил для draft | **Обязательно** Trading Standards / regulatory consultancy |
+| Novel food (CBD, новый ботаник) | Нет | FSA novel food authorisation |
+
+---
+
 ## Final 15-point Compliance Checklist
 
 Использовать на финальном этапе LISTING_CREATE:
@@ -208,7 +268,7 @@ ASA ruled (Novomins case 2024): **пропуск "contributes to"** перед N
 |---|---|---|
 | 1 | Нет RED FLAG слов (cure, treat, prevent, heal, disease names) | UK Food Supp. Dir. + ASA |
 | 2 | Все health claims из GB NHC Register (exact wording или ASA-approved adaptation) | GB NHC Register |
-| 3 | "contributes to" НЕ пропущено ни в одном health claim | ASA ruling Novomins 2024 |
+| 3 | "contributes to" НЕ пропущено ни в одном health claim | ASA enforcement (consistent rulings) |
 | 4 | British English везде (flavour, colours, fibre, organise) | UK FIC + style |
 | 5 | Title ≤200 символов (точный count через `len()`) | Amazon UK 2025 limit |
 | 6 | Каждый bullet ≤500 символов | Amazon UK limit |
