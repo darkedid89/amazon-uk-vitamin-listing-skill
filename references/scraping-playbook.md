@@ -1,7 +1,27 @@
 # Scraping Playbook — что, чем и когда скрапить
 
-> **Last verified:** 2026-05-18
+> **Last verified:** 2026-05-19
 > Practical scraping workflow для запуска нового supplement SKU на Amazon UK. Покрывает competitor research, own brand DNA, keyword data, label compliance reference.
+
+---
+
+## ⛔ HARD RULE — Amazon UK скрейпер
+
+**Для любого scrape Amazon UK product detail page использовать ТОЛЬКО:**
+
+> **[https://github.com/darkedid89/Amazon-listing-scraber](https://github.com/darkedid89/Amazon-listing-scraber)** (`scrape_asin_v2.js`)
+
+**Запрещено:** WebFetch (HTTP 500 от Amazon), Playwright snapshot (token-heavy), Firecrawl без UK proxy, manual fetch other tools.
+
+**Почему:**
+- WebFetch/Firecrawl возвращают HTTP 500 на amazon.co.uk без UK residential IP
+- agent-browser scraper использует Chrome for Testing с persistent UK cookies (`SW1A 1AA` postcode) → unlocks GBP prices + BSR
+- scrape_asin_v2.js token cost ~500-800 tokens per ASIN vs Playwright snapshot ~36,000 — 50-70× cheaper
+- Reproducible single-eval extraction — не subject к Amazon HTML drift
+
+**Локальная копия:** `/Users/igor/Downloads/NEW PRODUCTS/Amazon-listing-scraber/`
+
+**scrape_asin_v2.js** — расширенная версия с **productDetails** + **importantInformation** extractors (добавлено 2026-05-19 для structured attribute reverse-engineering).
 
 ---
 
@@ -20,13 +40,13 @@
 
 ## 🛠 Инструменты — выбор по задаче
 
-### 1. `scrape_asin.js` (vercel-labs/agent-browser + Chrome) — **PRIMARY**
+### 1. `scrape_asin_v2.js` (Amazon-listing-scraber + agent-browser + Chrome) — **MANDATORY**
 
-**Когда:** structured data per ASIN (title, bullets, BSR, A+ presence, price, rating, ingredients, images).
+**Когда:** structured data per ASIN — title, bullets, BSR, A+ presence, price, rating, **productDetails (20+ structured fields), importantInformation (Ingredients/Directions/Safety/Storage)**, images.
 **Скорость:** ~10-30 сек на ASIN.
-**Token cost:** ~50-70× cheaper than full Playwright snapshot.
+**Token cost:** ~500-800 tokens per ASIN (vs Playwright ~36,000).
 
-**Setup (one-time):**
+**Setup (one-time, если ещё не сделано):**
 ```bash
 git clone https://github.com/darkedid89/Amazon-listing-scraber.git
 cd Amazon-listing-scraber && npm install
@@ -40,25 +60,37 @@ npx agent-browser cookies set i18n-prefs GBP
 
 **Usage:**
 ```bash
-node scrape_asin.js B0G3MQRWDJ --region=uk > output.ndjson
-# Batch:
-for ASIN in B0G3MQRWDJ B09BRGHK6M ...; do
-  node scrape_asin.js "$ASIN" --region=uk > "scraped/${ASIN}.ndjson"
-done
+cd "/Users/igor/Downloads/NEW PRODUCTS/Amazon-listing-scraber"
+# Single ASIN
+node scrape_asin_v2.js B0G3MQRWDJ > out/scan.ndjson 2> out/scrape.log
+
+# Batch (6-10 ASINs typical)
+node scrape_asin_v2.js \
+  B0G3MQRWDJ B09BRGHK6M B0DPQLJN1G B0D6Z9H6D5 B0FPB7LC6L B0F3B4M5Z8 \
+  > out/competitor_attributes_$(date +%Y-%m-%d).ndjson
 ```
 
 **Fields returned per ASIN (NDJSON):**
-- `title`, `brand`, `manufacturer`, `seller`, `fulfillment`
-- `price`, `currency`
-- `bullets`, `bulletCount`
-- `rating`, `reviewCount`
-- `bsrMain`, `bsrSub`
-- `aplusPresent`, `aplusModules`, `aplusModuleUrls` (up to 24)
-- `mainImage`, `imageThumbs` (up to 10)
-- `dateFirstAvailable`, `packageDimensions`
-- `parentAsin`, `browseNodeId`
-- `availability`, `deliverTo`, `geoBlocked`
-- `scrapedAt`
+- **Identity:** `asin`, `parentAsin`, `browseNodeId`, `url`, `title`, `brand`, `manufacturer`, `fromBrand`
+- **Pricing/Commercial:** `price`, `currency`, `rating`, `reviewCount`, `bsrMain`, `bsrSub`, `seller`, `fulfillment`, `availability`, `deliverTo`, `geoBlocked`
+- **Content:** `bullets[]`, `bulletCount`
+- **Images:** `mainImage`, `imageThumbs[]`, `aplusPresent`, `aplusModules`, `aplusModuleUrls[]` (up to 24)
+- **Structured (v2):** `productDetails{}` — ~15-25 key-value attributes (Brand Name, Item Form, Container Type, Diet Type, Age Range, Primary Supplement Type, Special Ingredients, Flavour, Material Features, Allergen Information, Country of Origin, Item Weight, Product Dimensions, ...)
+- **Important Info (v2):** `importantInformation{}` — Ingredients (always), Directions, Safety Information, Storage, Legal Disclaimer
+- **Identifiers:** `dateFirstAvailable`, `packageDimensions`
+- **Meta:** `scrapedAt`
+
+**Quick analyze:**
+```bash
+python3 -c "
+import json
+for line in open('out/scan.ndjson'):
+    d = json.loads(line)
+    pd = d.get('productDetails',{}) or {}
+    ii = d.get('importantInformation',{}) or {}
+    print(d['asin'], 'fields:', len(pd), 'imp_info:', list(ii.keys()))
+"
+```
 
 ### 2. Helium 10 (Xray + Cerebro + Magnet)
 **Когда:** keyword research, niche sizing, competitor BSR/sales trends.
@@ -71,9 +103,11 @@ done
 ### 4. Brand Analytics (SQP / Top Search Terms)
 **Когда:** есть Brand Registry — first-party Amazon data (**приоритет vs Cerebro/ZonGuru**).
 
-### 5. WebFetch / Firecrawl (fallback)
-**Когда:** scrape_asin.js не вернул нужные поля (A+ модули text, FAQ).
-**Caveat:** Amazon UK часто блокирует HTTP 500 для non-residential IPs. Firecrawl с proxies — лучше WebFetch.
+### 5. ⛔ WebFetch / Firecrawl / Playwright snapshot — **NOT ALLOWED** для amazon.co.uk
+
+Amazon UK блокирует все эти методы (HTTP 500 для non-residential IPs). **Использовать только scrape_asin_v2.js.**
+
+Если scrape_asin_v2.js не возвращает нужное поле — расширить EXTRACTOR_JS в scraper repo (one-time mod), а не switching к WebFetch.
 
 ### 6. Manual screenshot (last resort)
 **Когда:** back-of-pack ingredients/nutrition panel — текст на product images. Скачать main image из NDJSON + OCR (Gemini/Claude vision).

@@ -1,13 +1,15 @@
 ---
 name: amazon-uk-vitamin-listing
 description: End-to-end Amazon UK food supplement workflow — validates packaging labels (vision-based) against UK FIC + 2002/46/EC + GB NHC Register, creates SEO-optimised compliant listings (title/bullets/description/backend), and analyses keyword CSVs (Helium 10, ZonGuru, Brand Analytics) into prioritised placement maps. Covers vitamins, minerals, sleep botanicals, omega-3, probiotics, multivitamins, sports supplements, sex/men's vitality. Use when user says "проверь этикетку", "label check", "правки для дизайнера", "создай листинг", "напиши листинг", "Amazon UK листинг", "vitamin listing", "supplement listing", "проанализируй ключевики", "keyword map", "листинг витаминов", "label validation", "UK FIC compliance", "food supplement label", "supplement compliance".
-version: "1.2.0"
-last_updated: "2026-05-18"
+version: "1.3.0"
+last_updated: "2026-05-19"
 ---
 
 # Amazon UK Vitamin & Supplement Listing — Label Check + Listing + Keywords
 
-> **Версия:** 1.2.0 (2026-05-18) — added empirical risk-budget extractor (n-gram analysis), Claude Haiku brand-swap judge, JSONL audit log, image-brief generator for 7-slot product photography, menopause category corpus + Vitgem brand profile.
+> **Версия:** 1.3.0 (2026-05-19) — added structured Seller Central attributes (20+ form fields), risk-tier classification (5 tiers), SV uplift analysis (Cerebro intersection + bullet placement weight), listing mechanisms runbook (v1→v4 workflow), Amazon-listing-scraber as MANDATORY scraper, 2026 backend doctrine (relevance check via Amazon search), Path A/B/C risk decision framework.
+>
+> **Версия 1.2.0** (2026-05-18) — added empirical risk-budget extractor (n-gram analysis), Claude Haiku brand-swap judge, JSONL audit log, image-brief generator for 7-slot product photography, menopause category corpus + Vitgem brand profile.
 >
 > **Версия 1.1.0** (2026-05-18) — added validators.py, golden tests, brand profiles, Vision prompting checklist, "When in doubt" decision tree.
 >
@@ -16,7 +18,7 @@ last_updated: "2026-05-18"
 End-to-end workflow для Amazon UK food supplements. Три режима в одном навыке:
 
 1. **LABEL_CHECK** — валидирует этикетку (JPG/PNG/PDF/text-spec) против UK FIC Regulation, UK Food Supplements Directive (2002/46/EC), и GB NHC Register. Output: правки для дизайнера в формате `LABEL_CORRECTIONS_for_designer.md`.
-2. **LISTING_CREATE** — пишет полный compliant листинг (Title ≤200 chars, 5 Bullets ≤1000 bytes total, Description ≤2000 chars, Backend ≤249 bytes). Output: блок `═══ AMAZON UK LISTING ═══`.
+2. **LISTING_CREATE** — пишет полный compliant листинг (Title ≤200 chars, 5 Bullets ≤1000 bytes total, Description ≤2000 chars, Backend ≤249 bytes, **+ 20+ Seller Central structured attributes, + 5 Important Information fields, + risk-tier classification, + addressable SV analysis**). Output: блок `═══ AMAZON UK LISTING ═══`.
 3. **KEYWORD_MAP** — анализирует CSV (Helium 10 Cerebro/Xray, ZonGuru KoF, Brand Analytics SQP/Top Search Terms) и строит карту распределения keywords по Title/Bullets/Backend/PPC.
 
 **Язык:** Объяснения, чек-листы, vердикты — **на русском**. Текст листинга, claims, label-elements, backend terms — **на British English**.
@@ -30,7 +32,19 @@ End-to-end workflow для Amazon UK food supplements. Три режима в о
 Никаких "на глаз", никаких "примерно", никаких "должно быть ок".
 Если claim не из GB NHC Register — НЕ ПИСАТЬ его.
 Если этикетка не указывает FBO + UK address — БЛОКЕР для печати.
+Если нужно scrape Amazon UK — ТОЛЬКО Amazon-listing-scraber/scrape_asin_v2.js.
+Если LISTING_CREATE без 20+ structured attribute fields — INCOMPLETE.
 ```
+
+## ⛔ Amazon UK scraping — ТОЛЬКО ОДИН ИНСТРУМЕНТ
+
+**Любой scrape amazon.co.uk = [scrape_asin_v2.js](references/scraping-playbook.md) из репо [darkedid89/Amazon-listing-scraber](https://github.com/darkedid89/Amazon-listing-scraber).**
+
+**Запрещено:** WebFetch (HTTP 500), Playwright snapshot (token-heavy), Firecrawl без UK residential proxy.
+
+Локальная копия установлена: `/Users/igor/Downloads/NEW PRODUCTS/Amazon-listing-scraber/`
+
+scrape_asin_v2.js возвращает: title, bullets, brand, price, rating, BSR, A+ content, mainImage, **productDetails (20+ fields), importantInformation (Ingredients/Directions/Safety/Storage)**.
 
 ## Регуляторный контекст (краткий, для триггеров)
 
@@ -66,8 +80,8 @@ End-to-end workflow для Amazon UK food supplements. Три режима в о
 
 Дополнительно по режиму:
 - LABEL_CHECK → `references/label-requirements.md`
-- LISTING_CREATE → `references/listing-templates.md` + `references/output-templates.md` + `references/scraping-playbook.md` (competitor research)
-- KEYWORD_MAP → `references/keyword-analysis.md` + `references/output-templates.md` + `references/scraping-playbook.md` (data sourcing)
+- LISTING_CREATE → `references/listing-templates.md` + `references/output-templates.md` + `references/scraping-playbook.md` (competitor research) + **`references/structured-attributes.md` (Seller Central form fields)** + **`references/risk-tier-classification.md`** + **`references/sv-uplift-analysis.md`** + **`references/listing-mechanisms.md`** (v1→v4 runbook)
+- KEYWORD_MAP → `references/keyword-analysis.md` + `references/output-templates.md` + `references/scraping-playbook.md` (data sourcing) + **`references/risk-tier-classification.md`** (competitor audit) + **`references/sv-uplift-analysis.md`** (intersection method)
 
 ---
 
@@ -283,7 +297,7 @@ End-to-end workflow для Amazon UK food supplements. Три режима в о
 
 **Gate 4:** ≤2000 chars. FAQ ответы прямые (1-3 предложения). Disclaimer содержит все 3 обязательных + pregnancy advisory.
 
-### Шаг 5: Backend Search Terms
+### Шаг 5: Backend Search Terms (2026 doctrine)
 
 Правила:
 - **Строго ≤249 байт** — превышение даже на 1 байт = ПОЛНАЯ деиндексация всех backend keywords
@@ -291,22 +305,87 @@ End-to-end workflow для Amazon UK food supplements. Три режима в о
 - Слова через пробелы, без запятых/точек с запятой/кавычек
 - НЕ повторять слова из Title или Bullets — Amazon индексирует весь листинг как единый набор
 - НЕ включать: бренд, ASIN конкурентов, медицинские/запрещённые термины
-- Включить: синонимы, British/American spelling variants, common misspellings, alternative form-factors (если продукт gummies → "tablets capsules pills"), demographic modifiers (women men adult)
+- **🆕 2026 RELEVANCE CHECK:** перед добавлением любого слова — открыть `https://www.amazon.co.uk/s?k=<keyword>` и убедиться, что в первой 10 results есть competitors в нашей форме (gummies для gummy SKU). Если результаты — patches/devices/cosmetics — НЕ ADD.
+- **🆕 Gummy SKU rule:** НЕ включать `tablets capsules pills drops` — wrong-fit traffic, burns ACoS (см. [[feedback_backend_no_alt_format]])
+- Misspellings ОК ТОЛЬКО если verified в Cerebro SV >50
+- Включить: relevance-verified синонимы, British/US spelling variants (`flushes`/`flashes`), confirmed misspellings, demographic modifiers (`women men adult mature lady`), age ranges (`40 45 50 55 60`), symptom long-tail (`bloating fatigue tiredness irritability sleeplessness sweating`)
+
+Полные правила: **`references/listing-templates.md` → "Backend Search Terms Formula (2026 best practices)"**.
 
 Проверка байтов **обязательна** через bash:
 ```bash
 echo -n "your backend terms here" | wc -c
 ```
 
-**Gate 5:** Backend ≤249 байт (verified via bash). Нет повторов с Title/Bullets/Description. Нет brand name, нет конкурентов.
+**Gate 5:** Backend ≤249 байт (verified via bash). Нет повторов с Title/Bullets/Description. Нет brand name, нет конкурентов. Все слова relevance-verified через Amazon search.
 
-### Шаг 6: Compliance Check (15-point audit)
+### 🆕 Шаг 5b: Structured Seller Central Attributes (NEW v1.3.0)
 
-См. `references/compliance-rules.md` → "Final 15-point checklist". Verdict только **SAFE TO PUBLISH** если все 15 пунктов ☑. Иначе **NEEDS FIXES** с перечислением проблем.
+После Title/Bullets/Description/Backend — заполнить **20+ Seller Central form fields**. **БЕЗ этих полей listing = INCOMPLETE.**
+
+См. **`references/structured-attributes.md`** — полная schema.
+
+**Минимум 12 obligatory fields:**
+- **Identity:** Brand Name, Manufacturer, MPN, Model Number, Item model number
+- **Format:** Item Form (Gummy/Tablet/Capsule), Container Type (Bottle/Tub), Number of Items, Unit Count, Total Servings Per Container
+- **Diet:** Diet Type (multi: Vegan/Gluten Free/Sugar Free/Halal/Kosher), Age Range Description (Adult/Child), Allergen Information
+- **Composition:** Primary Supplement Type (comma list of actives), Special Ingredients (branded actives: KSM-66®/Affron®), Material Features (multi), Supplement Formulation
+- **Details:** Flavour, Product Dimensions, Item Weight, Country of Origin
+- **Use cases:** Specific Uses For Product, Recommended Uses For Product
+
+**+ Important Information** (5 long-form fields ОТДЕЛЬНО от Description):
+- **Ingredients** — full INCI verbatim из label (ALWAYS)
+- **Directions** — "Chew N gummies daily..."
+- **Safety Information** — UK warnings (заменяет paragraph в description → освобождает ~400 chars)
+- **Storage** — temperature/light conditions
+- **Legal Disclaimer** — UK FBO + "food supplement not medicine"
+
+**Gate 5b:** ≥12 structured fields filled. Все 5 Important Information fields filled. Description освобождена от boilerplate warnings/directions/ingredients.
+
+### Шаг 6: Compliance Check (17-point audit) — UPDATED v1.3.0
+
+См. `references/compliance-rules.md` + **`references/risk-tier-classification.md`**.
+
+Verdict **SAFE TO PUBLISH** только если:
+- Все 17 compliance checks ☑
+- `validators.py` exit 0 (title + bullets + backend + dedup)
+- Risk tier ≤ MEDIUM (0 red flags. Amber count ≤ 10)
+
+Иначе **NEEDS FIXES** с перечислением проблем.
+
+### 🆕 Шаг 6b: Risk-tier classification + Addressable SV (NEW v1.3.0)
+
+См. **`references/risk-tier-classification.md`** и **`references/sv-uplift-analysis.md`**.
+
+1. Pass title+bullets через 5-tier classifier:
+   ```python
+   tier, red, amber = classify_risk(title + " " + " ".join(bullets))
+   ```
+   Confirm: 0 red, amber ≤ 10. Report tier (🔴/🟠/🟡/🟢/✅).
+
+2. Если есть Cerebro data → compute addressable SV:
+   ```python
+   addressable, matched = addressable_sv(cerebro_keywords, listing_tokens(title, bullets, backend))
+   ```
+   Filter to category-relevant. Compare to top-niche competitors.
+
+3. Show in output: `Risk tier: 🟡 MEDIUM (0 red / 8 amber)` + `Addressable SV: ~63-68K (Y1 Q2 realistic Top30)`.
 
 ### Шаг 7: Output
 
 Формат `═══ AMAZON UK LISTING ═══` — см. `references/output-templates.md` → LISTING_CREATE_OUTPUT.
+
+**Output sections (v1.3.0 expansion):**
+1. 📌 TITLE (char/byte count)
+2. 📌 BULLET POINTS (5 шт с char/byte count)
+3. 📌 PRODUCT DESCRIPTION (char count)
+4. 📌 BACKEND SEARCH TERMS (byte count)
+5. 🆕 📋 STRUCTURED ATTRIBUTES (table of all 20+ Seller Central fields)
+6. 🆕 📋 IMPORTANT INFORMATION (5 long-form fields)
+7. ✅ COMPLIANCE CHECK (17-point)
+8. 🆕 🎯 RISK TIER (red/amber count + tier)
+9. 🆕 📊 ADDRESSABLE SV (if Cerebro data available)
+10. 📊 SCORE BREAKDOWN (8 categories, total /100)
 
 ---
 
@@ -406,13 +485,17 @@ Priority Score = (SV × 0.30) + (Sales × 0.25) + (Competition_inv × 0.20) + (R
 │   ├── compliance-rules.md           ← UK red/yellow/green flags + 15-point checklist + decision tree
 │   ├── claims-database.md            ← GB NHC Register (25 ингредиентов) + safe claims по 9 категориям
 │   ├── label-requirements.md         ← UK FIC + 2002/46/EC + 12-point label audit
-│   ├── listing-templates.md          ← Title/Bullets/Description/Backend formulas + примеры
+│   ├── listing-templates.md          ← Title/Bullets/Description/Backend formulas + примеры + 2026 backend doctrine
 │   ├── keyword-analysis.md           ← CSV schemas + scoring formula + tier allocation
-│   ├── scraping-playbook.md          ← что/чем/когда скрапить — Amazon UK + H10 + Cerebro workflow
+│   ├── scraping-playbook.md          ← ⛔ HARD RULE: только Amazon-listing-scraber/scrape_asin_v2.js
 │   ├── output-templates.md           ← точные форматы output для всех трёх режимов
 │   ├── brand-swap-corpora.json       ← labelled examples для brand-swap judge (drug-mimic vs legit)
 │   ├── image-specifications.md       ← Amazon UK image требования + 7 slot patterns
-│   └── empirical-risk-budget-*.md    ← auto-generated per category (run refresh_risk_budget.py)
+│   ├── empirical-risk-budget-*.md    ← auto-generated per category (run refresh_risk_budget.py)
+│   ├── 🆕 structured-attributes.md   ← ★ Seller Central 20+ form fields schema (v1.3.0)
+│   ├── 🆕 risk-tier-classification.md ← ★ 5-tier risk classification (red/amber regex dictionaries)
+│   ├── 🆕 sv-uplift-analysis.md      ← ★ Cerebro intersection + placement weight uplift method
+│   └── 🆕 listing-mechanisms.md      ← ★ Vitgem v1→v4 full workflow runbook (10 mechanisms)
 ├── tools/
 │   └── refresh_risk_budget.py        ← n-gram analysis competitor corpus → empirical risk-budget
 ├── data/

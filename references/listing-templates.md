@@ -251,29 +251,64 @@ Important: Do not exceed the stated recommended daily dose. Food supplements sho
 
 ---
 
-## Backend Search Terms Formula
+## Backend Search Terms Formula (2026 best practices)
 
-### Что включать
+### ⚡ 2026 Backend Doctrine
 
-1. **Синонимы основного продукта:** tablets, capsules, supplement, pills (если продукт = gummies → эти ловят смежный трафик)
-2. **British + American spelling variants:** fibre/fiber, colour/color, flavour/flavor
-3. **Связанные термины:** альтернативные написания ингредиентов, формы выпуска
-4. **Intent keywords:** "for men", "for women", "daily", "strong", "high strength", "natural"
-5. **Частые опечатки** (если очевидные): melitonin → melatonin (если нет в title), ashwaganda → ashwagandha
-6. **Demographic modifiers:** women, men, adult, adults, kids (если применимо)
-7. **Format alternatives:** chewable, swallow, easy
-8. **Adjacent traffic:** related ingredients конкурентов которые ловит ваш продукт
+Amazon продолжает усиливать **relevance signal** в A10. Backend больше НЕ "хранилище для всего что не влезло".
+Каждый word должен **either:**
+1. Принести incremental search traffic с релевантными покупателями
+2. Capture spelling variant / misspelling существующей релевантной query
+3. Capture demographic modifier (women / men / adult) для аудитории нашего SKU
 
-### Что НЕ включать
+**Иначе word = wasted bytes, decreasing A10 relevance score per byte.**
 
-- Слова уже в Title или Bullets (Amazon индексирует весь листинг)
-- Название бренда (бренд индексируется отдельно)
-- ASIN конкурентов / названия конкурентов
-- Медицинские/запрещённые термины (`cure`, `treat`, drug names)
-- Disease names
-- Слова на других языках (кроме если целевая аудитория мультиязычная UK)
-- Запятые, точки с запятой, кавычки, hashtags
-- Stop words (the, and, for, with) — Amazon их игнорирует, пустая трата байтов
+### ⛔ Hard rule: проверка relevance перед добавлением
+
+**Перед добавлением любого слова в backend — проверить через Amazon search:**
+
+```
+Открыть https://www.amazon.co.uk/s?k=<keyword>
+Просмотреть первые 10 results
+```
+
+| Что видишь в search | Action |
+|---|---|
+| Direct competitors в нашей форме (gummies/menopause/etc) | ✅ ADD — relevant |
+| Adjacent products но в другой форме (tablets, capsules) | ⚠️ EVALUATE — может быть OK для cross-format capture, но НЕ для gummy SKU (см. Vitgem house rule) |
+| **Другая ниша / unrelated products** | ❌ DO NOT ADD — irrelevant traffic burns ACoS + decreases relevance |
+| Только wear devices / patches / cosmetics | ❌ Off-category — exclude |
+
+**Пример (Vitgem Menopause Gummies):**
+- `menopause supplements` → search shows H&H, Menopace, Vitabiotics gummies+tablets → ✅ relevant
+- `menopause patches` → search shows hormone patches (medical devices) → ❌ off-category
+- `menopause test kit` → search shows diagnostic kits → ❌ off-category
+- `irritability` → search shows mixed mood/B-complex/menopause products → ✅ relevant edge case
+- `chewable` → search shows tablets/multivitamins (не menopause-specific) → ⚠️ borderline, depends
+
+### Что включать (relevance-verified только)
+
+1. **Misspellings** — **только если confirmed Cerebro SV > 50** OR явно интуитивная опечатка для основной keyword
+   - `ashwaganda` (без 'h'), `menapause`, `menaupose`, `menopours` — все имеют real SV в Cerebro data
+   - НЕ выдумывать misspellings — verify в Cerebro/Brand Analytics
+2. **British + American spelling variants** — `fibre/fiber`, `colour/color`, `flavour/flavor`, `flushes/flashes` (UK/US)
+3. **Demographic modifiers** — `women men adult adults kids midlife mature lady` (по аудитории SKU)
+4. **Age ranges** — `40 45 50 55 60` (если SKU = midlife targeting)
+5. **Symptom long-tail** (relevant!) — `irritability sleeplessness sweating bloating` (НЕ disease words)
+6. **Cross-traffic ingredients** — adjacent supplements которые буквально ловит наш продукт (`maca` если используется зеленым клевером)
+
+### ⛔ Что НЕ включать (2026)
+
+- **Слова уже в Title или Bullets** — Amazon индексирует Title + Bullets + Backend как unified set. Дублирование = wasted bytes (см. `validators.py dedup`)
+- **Название бренда** — бренд индексируется отдельно
+- **ASIN конкурентов / brand names конкурентов** — Amazon ToS violation
+- **Медицинские/запрещённые слова** — `cure`, `treat`, `prevent`, disease names, drug names, `HRT`, `estrogen`, `relief`
+- **Disease names** — `anxiety`, `depression`, `insomnia`, `arthritis`, `diabetes`, `IBS`, `ADHD`
+- **Слова с risk-amplification** — `boost`, `best`, `#1`, `leading`, `most effective`
+- **Stop words** — `the and for with on by` — Amazon ignores → wasted bytes
+- **Языковая mismatch** — non-English (кроме если SKU targets multi-lingual UK audience)
+- **Punctuation** — запятые, точки с запятой, кавычки, hashtags
+- **Alt-format keywords у gummy SKU** — НЕ включать `tablets capsules pills drops` в backend гамми SKU (по Vitgem house rule `feedback_backend_no_alt_format` 2026-05-19). Reasoning: люди ищущие `tablets` ≠ хотят купить `gummies` → wrong-fit traffic burns ACoS
 
 ### Формат
 
@@ -289,13 +324,75 @@ echo -n "ваш backend terms текст" | wc -c
 
 Результат **строго ≤249**. Если 250+ — удалить наименее важные термины.
 
-### Пример хорошего backend (Sleep Gummies, 243 bytes)
+### Пример хорошего backend (Sleep Gummies, 243 bytes) — LEGACY 2025
 
 ```
 magnesium tablets capsules pills drops relax tranquil peaceful soothe slumber snooze stress relief energy pyridoxine valerian theanine 5htp passionflower women men non habit forming calming nightly nighttime strength berry raspberry adult doze
 ```
 
-NB: `5htp` тут как backend — формально серый, но широко используется и не появляется в front-facing полях. Можно убрать если хочется max-safe.
+⚠️ **2026 audit:** этот legacy example нарушает несколько новых правил:
+- `tablets capsules pills drops` — нарушает Vitgem house rule (gummy SKU не должна включать alt-format)
+- `stress relief` — `relief` теперь RED flag (ASA enforcement risk)
+- `5htp` — drug-mimicking → лучше убрать
+
+### Пример хорошего backend (Vitgem Menopause v4, 242 bytes) — 2026 ✓
+
+```
+menopausal perimenopausal premenopause postmenopause menapause menaupose menopours flashes bloating energy fatigue tiredness complex multivitamin maca herbal natural wellbeing 40 50 irritability sleeplessness sweating mature 45 55 60 lady fem
+```
+
+Categories represented:
+- **Misspellings (5)** — `menapause menaupose menopours` + spelling variants
+- **British/US** — `flushes` (in bullets) + `flashes` (in backend US form)
+- **Symptoms (4)** — `bloating energy fatigue tiredness irritability sleeplessness sweating`
+- **Cross-traffic (3)** — `complex multivitamin maca`
+- **Wellness adjacent (2)** — `herbal natural wellbeing`
+- **Demographics (7)** — `40 50 45 55 60 lady fem mature`
+
+NB: no `tablets/capsules/pills` (gummy SKU), no `relief/best/HRT/estrogen` (compliance), no дублирование с
+Title/Bullets words.
+
+---
+
+## Structured Seller Central Attributes (NEW 2026, v1.3.0)
+
+**Beyond Title/Bullets/Description/Backend — Amazon UK Seller Central имеет ~20-25 отдельных form fields** для структурированных атрибутов. Большинство брендов их игнорируют — это наше major opportunity.
+
+См. подробный schema в **[structured-attributes.md](structured-attributes.md)**.
+
+**Core principle:** structured fields освобождают description от boilerplate (warnings/directions/ingredients) и
+открывают левый sidebar Amazon UI filter "Refine by" — иначе invisible to filter-users.
+
+### Top 12 obligatory fields per LISTING_CREATE output:
+
+| Field | Type | Example |
+|---|---|---|
+| Brand Name | text | `Vitgem` |
+| Manufacturer | text | `Vitgem Ltd` |
+| Item Form | enum | `Gummy` |
+| Container Type | enum | `Bottle` |
+| Diet Type | multi | `Vegan, Gluten Free, Sugar Free` |
+| Number of Items | int | `1` |
+| Unit Count | text | `60 count` |
+| Primary Supplement Type | text | `Sage Leaf, Ashwagandha, Saffron, Red Clover, Vitamin B6` |
+| Flavour | text | `Raspberry` |
+| Product Dimensions | text | `12 x 6.5 x 6.5 cm; 180 g` |
+| Country of Origin | enum | `United Kingdom` |
+| **Ingredients** (Important Info) | longform | full INCI verbatim из label |
+
+### Important Information panel (5 separate long-form fields)
+
+| Field | When to fill |
+|---|---|
+| **Ingredients** | ALWAYS — full INCI verbatim из label |
+| **Directions** | ALWAYS — короткая инструкция приёма |
+| **Safety Information** | ALWAYS — UK warnings (заменяет paragraph в description) |
+| **Storage** | RECOMMENDED — temperature + light conditions |
+| **Legal Disclaimer** | RECOMMENDED — UK FBO + "food supplement not medicine" |
+
+### Output template extension
+
+В финальном `═══ AMAZON UK LISTING ═══` block добавить секцию **`📋 STRUCTURED ATTRIBUTES`** с таблицей всех заполненных полей.
 
 ---
 
