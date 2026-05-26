@@ -151,12 +151,12 @@ def check_bullets(bullets: list[str]) -> bool:
 
     for i, b in enumerate(bullets, start=1):
         head = b.lstrip().split("—", 1)
-        if len(head) == 2 and re.match(r"^[A-Z0-9 &-]{2,40}$", head[0].strip()):
+        if len(head) == 2 and re.match(r"^[A-Z0-9 &,+/\-]{2,40}$", head[0].strip()):
             _print_result(f"bullet[{i}].caps_label", True, f"{head[0].strip()!r}")
         else:
             _print_result(
                 f"bullet[{i}].caps_label", False,
-                "must start with CAPS LABEL (2-4 words) + ' — '"
+                "must start with CAPS LABEL (2-4 words, chars: A-Z 0-9 space & , + / -) + ' — '"
             )
             ok = False
 
