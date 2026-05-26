@@ -2,7 +2,7 @@
 
 Claude Code skill для end-to-end workflow создания и валидации Amazon UK food supplement листингов.
 
-**Версия:** v1.3.0 (2026-05-19) — **industry-leading 87/100** на UK food supplement category.
+**Версия:** v1.5.0 (2026-05-26) — MVP-Refactor release. **97/100** на UK food supplement category.
 
 ## Что умеет
 
@@ -14,7 +14,20 @@ Claude Code skill для end-to-end workflow создания и валидац�
 | **LISTING_CREATE** | Пишет полный compliant Amazon UK listing (Title ≤200 / 5 Bullets ≤1000B / Description ≤2000 / Backend ≤249B) **+ 20+ Seller Central structured attributes + 5 Important Information fields + risk-tier classification + addressable SV analysis**. 17-point compliance check. | "создай листинг", "напиши листинг", "Amazon UK listing" |
 | **KEYWORD_MAP** | Анализирует CSV из Helium 10 / ZonGuru / Brand Analytics, строит keyword placement map по тирам Title/Bullets/Backend/PPC с risk-tier audit. | "проанализируй ключевики", "keyword map" |
 
-## ⭐ Что нового в v1.3.0
+## ⭐ Что нового в v1.5.0 (MVP-Refactor)
+
+- **SKILL.md slim** — 654 → 264 lines (-60%), 43KB → 14.8KB (-66%). Mode 1/2/3 detail вынесены в `references/mode-*.md` (lazy-loaded).
+- **"Use when…" frontmatter** — trigger-focused description per writing-skills convention (вместо workflow summary).
+- **Lazy-load convention** — pre-flight refs (compliance + claims + decision tree + brand convention) + mode-specific lazy load → 30%+ token savings per invocation.
+- **CAPS regex relaxed** — теперь принимает `, + /` (label "60 GUMMIES & 30-DAY SUPPLY" и "500MG ACV B-COMPLEX BLEND" больше не false-positive).
+- **Auto golden test runner** — `bash tools/run_tests.sh` с pass/fail summary, exit 0/1 для CI integration.
+- **"When in doubt" decision tree** — `references/decision-tree.md` consolidates 10 ambiguity scenarios (label unclear, NHC missing, FBO non-UK, BR inactive, etc.).
+- **Brand profile auto-load convention** — `references/brand-profiles-convention.md` codifies 5 rules для cross-mode brand awareness.
+- **3 active brand profiles** — meleva (sleep), vitgem-menopause (clinical), intense-wellness (daily wellness multi-SKU).
+
+Deferred to v2.0.0: PPC Mode 4 · A+ Content Mode 5 · 6 additional category corpora · image_brief.py listing integration.
+
+## ⭐ Что было в v1.3.0
 
 - **Structured Seller Central attributes** (20+ form fields) — Brand Name, Item Form, Diet Type, Primary Supplement Type, Material Features, Allergen Information, Country of Origin и др. Reverse-engineered из 6 топ-gummy конкурентов.
 - **Important Information fields** (5 long-form) — Ingredients (always), Directions, Safety Information, Storage, Legal Disclaimer. Освобождают ~600-800 chars в description от boilerplate.
