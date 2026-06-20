@@ -263,6 +263,7 @@ function loop(now){
   let dt=Math.min((now-last)/1000,0.05); last=now;
   if(G.state==='play') update(dt);
   else if(G.state==='finishing') winUpdate(dt);
+  else if(G.state==='losing') loseUpdate(dt);
   render();
   requestAnimationFrame(loop);
 }
@@ -376,7 +377,48 @@ function updateHUD(){
 }
 
 function finish(won){
-  if(won){ startWin(); } else { showResult(false); }
+  if(won){ startWin(); } else { startLose(); }
+}
+
+// --- LOSE SEQUENCE: a rival drinks YOUR Coca-Cola while the hero arrives too late ---
+function startLose(){
+  G.won=false; G.state='losing'; G.loseT=0;
+  G.winner = G.rivals.reduce((a,b)=>b.prog>a.prog?b:a);
+  G.shake=6; tone(160,.45,.18,'sawtooth');
+}
+function loseUpdate(dt){
+  G.loseT+=dt;
+  const p=G.player;
+  p.x += (W*0.5-p.x)*Math.min(1,dt*5);
+  p.runPhase += dt*2;                       // slow, out of breath
+  if(G.loseT>0.55 && Math.random()<0.5) spawnParticle(W*0.5, H*0.42-30, '#fff4e0', rnd(1.5,3), -1);
+  for(const pt of G.particles){ pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.12; pt.life-=dt; }
+  G.particles=G.particles.filter(pt=>pt.life>0);
+  if(G.shake>0) G.shake*=0.9;
+  if(G.loseT>2.0) showResult(false);
+}
+function drawLoseSequence(){
+  const t=G.loseT, win=G.winner;
+  const wx=W*0.5, wy=H*0.42;
+  // the rival who stole the can, drinking it
+  if(t<=0.55){
+    const k=clamp(t/0.55,0,1);
+    const cy=(wy-130)+((wy-26)-(wy-130))*k;
+    drawHuman(wx,wy,1.05,win.col, G.t*10, 0, 1, true, false, 0);
+    drawCan(wx,cy,17,50,'#e10916','#fff',false);
+  } else {
+    const d=clamp((t-0.55)/0.5,0,1);
+    drawHuman(wx,wy,1.05,win.col, G.t*4, 0, 1, false, false, d);
+    ctx.save(); ctx.translate(wx+3,wy-30); ctx.rotate(d*0.55);
+    drawCan(0,0,13,40,'#e10916','#fff',false); ctx.restore();
+  }
+  ctx.fillStyle=win.col; ctx.font='900 14px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('🏆 '+win.name, wx, wy-58);
+  // hero arrives too late, slumped & disappointed
+  const hx=G.player.x, hy=H*0.8;
+  drawHuman(hx,hy,0.95,'#e10916', G.player.runPhase, 0.05, G.player.faceX, false, true, 0);
+  ctx.fillStyle='rgba(180,200,255,0.95)'; ctx.font='900 18px sans-serif';
+  ctx.fillText('. . .', hx, hy-46);
 }
 
 // --- WIN SEQUENCE: hero grabs the Coca-Cola and drinks it (played before overlay) ---
@@ -460,6 +502,12 @@ function render(){
     drawObstaclesAndBubbles();
     drawRivals();
     drawWinSequence();
+    drawParticles();
+    drawRivalRail();
+  } else if(G.state==='losing'){
+    drawTrack();
+    drawObstaclesAndBubbles();
+    drawLoseSequence();
     drawParticles();
     drawRivalRail();
   } else if(G.state==='play'||G.state==='result'){
