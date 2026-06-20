@@ -4,95 +4,64 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#c20016" />
-<title>COLA RUSH: Last Can</title>
+<title>COLA SNATCH — Отними последнюю</title>
 <style>
-  :root{
-    --cola-red:#e10916;
-    --cola-dark:#7c0010;
-    --cola-deep:#2a0207;
-    --fizz:#ffd23f;
-    --foam:#fff4e0;
-  }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;overflow:hidden;background:#120104;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#fff;}
-  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 0%,#3a0309,#120104 70%);}
-  #stage{position:relative;height:100%;aspect-ratio:9/16;max-width:100%;background:#1a0206;box-shadow:0 0 60px rgba(225,9,22,.35);overflow:hidden;touch-action:none;}
+  html,body{height:100%;overflow:hidden;background:#0e0a06;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#fff;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 0%,#3a0309,#0e0a06 70%);}
+  #stage{position:relative;height:100%;aspect-ratio:9/16;max-width:100%;background:#15100a;box-shadow:0 0 60px rgba(225,9,22,.35);overflow:hidden;touch-action:none;}
   @media (max-aspect-ratio:9/16){#stage{width:100%;height:auto;}}
   canvas{display:block;width:100%;height:100%;}
 
-  /* ---- Overlays ---- */
   .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:28px;gap:18px;z-index:20;
-    background:radial-gradient(circle at 50% 30%,rgba(120,3,12,.65),rgba(8,1,3,.92));
-    backdrop-filter:blur(2px);transition:opacity .25s;}
+    text-align:center;padding:28px;gap:16px;z-index:20;
+    background:radial-gradient(circle at 50% 30%,rgba(120,3,12,.6),rgba(6,4,2,.93));backdrop-filter:blur(2px);}
   .hidden{display:none!important;}
-  .logo{font-weight:900;letter-spacing:1px;line-height:.95;text-transform:uppercase;}
-  .logo b{display:block;font-size:13vmin;color:var(--cola-red);text-shadow:0 4px 0 var(--cola-dark),0 0 30px rgba(225,9,22,.7);}
-  .logo span{display:block;font-size:5.4vmin;color:var(--fizz);letter-spacing:3px;margin-top:4px;text-shadow:0 2px 8px rgba(0,0,0,.5);}
-  .sub{font-size:3.6vmin;color:#ffd9c2;max-width:84%;line-height:1.45;opacity:.95;}
-  .btn{cursor:pointer;border:none;border-radius:999px;padding:18px 40px;font-size:5vmin;font-weight:900;
-    color:#fff;background:linear-gradient(180deg,#ff2b39,#b40010);text-transform:uppercase;letter-spacing:1px;
+  .logo b{display:block;font-size:12.5vmin;font-weight:900;letter-spacing:1px;line-height:.92;text-transform:uppercase;color:#e10916;text-shadow:0 4px 0 #7c0010,0 0 30px rgba(225,9,22,.7);}
+  .logo span{display:block;font-size:4.6vmin;color:#ffd23f;letter-spacing:2px;margin-top:6px;}
+  .sub{font-size:3.5vmin;color:#ffd9c2;max-width:88%;line-height:1.45;}
+  .btn{cursor:pointer;border:none;border-radius:999px;padding:18px 42px;font-size:5vmin;font-weight:900;color:#fff;
+    background:linear-gradient(180deg,#ff2b39,#b40010);text-transform:uppercase;letter-spacing:1px;
     box-shadow:0 6px 0 #6e000c,0 12px 24px rgba(0,0,0,.45);transition:transform .08s,box-shadow .08s;}
   .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #6e000c,0 6px 14px rgba(0,0,0,.45);}
   .btn.gold{background:linear-gradient(180deg,#ffd23f,#e29a00);color:#5c2e00;box-shadow:0 6px 0 #9c6a00,0 12px 24px rgba(0,0,0,.4);}
-  .hint{font-size:3vmin;opacity:.8;margin-top:4px;}
-  .stat-row{display:flex;gap:26px;justify-content:center;margin:6px 0;}
+  .hint{font-size:2.9vmin;opacity:.82;line-height:1.5;}
+  .stat-row{display:flex;gap:26px;justify-content:center;margin:4px 0;}
   .stat{display:flex;flex-direction:column;gap:2px;}
-  .stat .v{font-size:7vmin;font-weight:900;color:var(--fizz);}
-  .stat .l{font-size:2.8vmin;opacity:.75;text-transform:uppercase;letter-spacing:1px;}
+  .stat .v{font-size:7vmin;font-weight:900;color:#ffd23f;}
+  .stat .l{font-size:2.7vmin;opacity:.75;text-transform:uppercase;letter-spacing:1px;}
   .result-title{font-size:11vmin;font-weight:900;text-transform:uppercase;line-height:.9;}
-  .win .result-title{color:var(--fizz);text-shadow:0 4px 0 #b97c00,0 0 30px rgba(255,210,63,.6);}
+  .win .result-title{color:#ffd23f;text-shadow:0 4px 0 #b97c00,0 0 30px rgba(255,210,63,.6);}
   .lose .result-title{color:#ff5566;text-shadow:0 4px 0 #6e000c;}
-
-  /* ---- HUD ---- */
-  #hud{position:absolute;inset:0;pointer-events:none;z-index:10;}
-  #topbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px;}
-  .pill{background:rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.15);border-radius:14px;padding:6px 12px;font-weight:800;font-size:3.4vmin;backdrop-filter:blur(3px);}
-  .pill small{display:block;font-size:2.2vmin;opacity:.7;font-weight:600;letter-spacing:1px;}
-  #rankPill{color:var(--fizz);}
-  #carbWrap{position:absolute;left:16px;bottom:18px;width:34px;height:42%;border-radius:18px;
-    border:2px solid rgba(255,255,255,.2);overflow:hidden;background:rgba(0,0,0,.35);}
-  #carbFill{position:absolute;left:0;right:0;bottom:0;height:0%;
-    background:linear-gradient(180deg,#ff3b3b,#ffd23f);transition:height .05s;}
-  #carbLabel{position:absolute;left:6px;bottom:-26px;font-size:2.4vmin;opacity:.7;font-weight:800;letter-spacing:1px;white-space:nowrap;}
   #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:15;}
-  .tag{position:absolute;bottom:8px;right:12px;font-size:2.2vmin;opacity:.45;z-index:10;}
+  .tag{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:2.1vmin;opacity:.4;z-index:10;}
 </style>
 </head>
 <body>
 <div id="wrap">
   <div id="stage">
     <canvas id="cv"></canvas>
-
-    <!-- HUD -->
-    <div id="hud">
-      <div id="topbar">
-        <div class="pill" id="lvlPill"><small>УРОВЕНЬ</small><span id="lvlNum">1</span></div>
-        <div class="pill" id="rankPill"><small>МЕСТО</small><span id="rankNum">6/6</span></div>
-      </div>
-      <div id="carbWrap"><div id="carbFill"></div><div id="carbLabel">СПРИНТ</div></div>
-    </div>
     <div id="flash"></div>
 
     <!-- MENU -->
     <div class="screen" id="menu">
-      <div class="logo"><b>Cola<br>Rush</b><span>Last Can Standing</span></div>
-      <div class="sub">Последняя банка <b>Coca-Cola</b> — одна на всех. Беги к ней <b>первым</b> и осуши до дна.</div>
+      <div class="logo"><b>Cola<br>Snatch</b><span>Отними последнюю</span></div>
+      <div class="sub">Одна банка <b>Coca-Cola</b> на всех. <b>Схвати</b> её, удержи и пей. Чужой утащил — <b>выбей рывком</b> и допей сам!</div>
       <button class="btn" id="playBtn">Играть</button>
-      <div class="hint">Держи палец / ЛКМ — спринт вверх.<br>Веди в сторону — уклоняйся. Не выложись в ноль — споткнёшься!</div>
+      <div class="hint">Веди палец — беги в любую сторону.<br>Кнопка <b>РЫВОК</b> справа снизу — выбить банку / удрать.<br>Набери 100% глотков первым.</div>
     </div>
 
     <!-- RESULT -->
     <div class="screen hidden" id="result">
       <div class="result-title" id="resTitle">ПОБЕДА!</div>
-      <div class="sub" id="resSub">Ты добрался до банки первым. Глоток победителя!</div>
+      <div class="sub" id="resSub"></div>
       <div class="stat-row">
         <div class="stat"><span class="v" id="resRank">1</span><span class="l">Место</span></div>
-        <div class="stat"><span class="v" id="resBub">0</span><span class="l">Пузырьки</span></div>
-        <div class="stat"><span class="v" id="resTime">0.0s</span><span class="l">Время</span></div>
+        <div class="stat"><span class="v" id="resSteal">0</span><span class="l">Перехваты</span></div>
+        <div class="stat"><span class="v" id="resTime">0s</span><span class="l">Время</span></div>
       </div>
       <button class="btn gold" id="nextBtn">Дальше</button>
-      <button class="btn" id="retryBtn" style="font-size:3.6vmin;padding:12px 28px">Заново</button>
+      <button class="btn" id="retryBtn" style="font-size:3.6vmin;padding:12px 30px">Заново</button>
     </div>
 
     <div class="tag">prototype build · brand mock-up "Coca-Cola"</div>
@@ -102,656 +71,495 @@
 <script>
 "use strict";
 /* =========================================================================
-   COLA RUSH: LAST CAN  — hyper-casual vertical race prototype
-   Core mechanic "FIZZ CONTROL": hold to charge carbonation & climb faster,
-   but overcharge = the can pops (stun). Race the "world" (AI cans) to the
-   last can at the top, then drink it. One thumb. 15-30s per level.
+   COLA SNATCH — top-down keep-away for the last Coca-Cola.
+   Grab the can, hold it to sip (fill your meter), DASH to steal it back.
+   First to 100% sips wins. One thumb, fully dynamic, "one vs world".
    ========================================================================= */
 
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
-
-// ---- responsive canvas (9:16 logical space) ----
-let W = 540, H = 960, DPR = 1;
+let W=540, H=960, DPR=1;
 function resize(){
-  const stage = document.getElementById('stage');
-  const r = stage.getBoundingClientRect();
-  DPR = Math.min(window.devicePixelRatio || 1, 2.5);
-  cv.width  = Math.round(r.width  * DPR);
-  cv.height = Math.round(r.height * DPR);
-  // logical space scales to a fixed 540 width for consistent tuning
-  W = 540; H = 540 * (r.height / r.width);
+  const r=document.getElementById('stage').getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2.5);
+  cv.width=Math.round(r.width*DPR); cv.height=Math.round(r.height*DPR);
+  W=540; H=540*(r.height/r.width);
 }
-window.addEventListener('resize', resize);
+window.addEventListener('resize',resize);
 
-// ---- audio (WebAudio, started on first input) ----
+// ---------- audio ----------
 let AC=null;
-function audio(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
-function noiseBurst(dur, vol, hp){
-  const ac=audio(); if(!ac)return;
-  const n=ac.createBufferSource();
-  const buf=ac.createBuffer(1, ac.sampleRate*dur, ac.sampleRate);
-  const d=buf.getChannelData(0);
-  for(let i=0;i<d.length;i++){ d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.5); }
-  n.buffer=buf;
-  const f=ac.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||600;
-  const g=ac.createGain(); g.gain.value=vol;
-  n.connect(f); f.connect(g); g.connect(ac.destination);
-  n.start();
-}
-function tone(freq,dur,vol,type){
-  const ac=audio(); if(!ac)return;
-  const o=ac.createOscillator(), g=ac.createGain();
-  o.type=type||'sine'; o.frequency.value=freq;
-  g.gain.setValueAtTime(vol, ac.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur);
-  o.connect(g); g.connect(ac.destination);
-  o.start(); o.stop(ac.currentTime+dur);
-}
+function audio(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return AC; }
+function tone(f,d,v,t){ const ac=audio(); if(!ac)return; const o=ac.createOscillator(),g=ac.createGain();
+  o.type=t||'sine'; o.frequency.value=f; g.gain.setValueAtTime(v,ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d); o.connect(g); g.connect(ac.destination);
+  o.start(); o.stop(ac.currentTime+d); }
+function noise(d,v,hp){ const ac=audio(); if(!ac)return; const n=ac.createBufferSource();
+  const b=ac.createBuffer(1,ac.sampleRate*d,ac.sampleRate),dd=b.getChannelData(0);
+  for(let i=0;i<dd.length;i++) dd[i]=(Math.random()*2-1)*Math.pow(1-i/dd.length,1.4);
+  n.buffer=b; const f=ac.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||500;
+  const g=ac.createGain(); g.gain.value=v; n.connect(f); f.connect(g); g.connect(ac.destination); n.start(); }
 const sfx={
-  bubble:()=>tone(700+Math.random()*400,.08,.12,'triangle'),
-  hit:()=>{ tone(120,.18,.2,'sawtooth'); noiseBurst(.12,.12,300); },
-  pop:()=>{ tone(90,.25,.28,'square'); noiseBurst(.18,.18,200); },
-  win:()=>{ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.22,.18,'triangle'),i*110)); },
-  fizz:()=>noiseBurst(.5,.06,1200),
-  glug:()=>tone(220,.12,.14,'sine'),
+  grab:()=>{ tone(520,.12,.18,'triangle'); setTimeout(()=>tone(780,.1,.15,'triangle'),60); },
+  steal:()=>{ tone(180,.16,.22,'sawtooth'); noise(.14,.14,300); },
+  dash:()=>noise(.18,.1,900),
+  sip:()=>tone(300+Math.random()*120,.06,.06,'sine'),
+  win:()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.22,.18,'triangle'),i*110)),
+  lose:()=>tone(150,.5,.2,'sawtooth'),
+  bump:()=>tone(110,.1,.12,'square'),
 };
 
-// ---- game state ----
-const G = {
-  state:'menu',          // menu | play | result
-  level:1,
-  t:0,                   // race time
-  goal:0,                // distance to last can
-  scroll:0,              // how far world has scrolled (== player progress)
-  player:null,
-  rivals:[],
-  obstacles:[],
-  bubbles:[],
-  particles:[],
-  shake:0,
-  flash:0,
-  bubblesGot:0,
-  finishCan:null,        // {y} the last can rendered when near goal
-  won:false,
-};
-
-const NUM_RIVALS = 5; // "one vs world": 5 AI cans
-
+// ---------- helpers ----------
 function rnd(a,b){return a+Math.random()*(b-a);}
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function len(x,y){return Math.hypot(x,y);}
 
-// ---- level setup ----
+// ---------- game ----------
+const WIN_METER=100;
+const G={ state:'menu', level:1, t:0, ents:[], player:null, can:null, obstacles:[],
+  particles:[], shake:0, flash:0, endT:0, winner:null, won:false };
+let arena={x0:0,y0:0,x1:0,y1:0};
+
+function newEntity(o){ return Object.assign({
+  x:0,y:0,vx:0,vy:0,r:16,col:'#fff',name:'',isPlayer:false,
+  meter:0,dashCd:0,dashT:0,stun:0,steals:0,fx:0,fy:-1,legPhase:rnd(0,6.28),grace:0,
+},o); }
+
 function startLevel(level){
-  G.level = level;
-  G.t = 0; G.scroll = 0; G.shake=0; G.flash=0; G.bubblesGot=0; G.won=false;
-  G.goal = 2600 + level*420;                     // longer each level
-  const baseSpeed = 170 + level*7;               // world cruise speed
-  G.baseSpeed = baseSpeed;
+  G.level=level; G.t=0; G.shake=0; G.flash=0; G.particles=[]; G.won=false; G.winner=null;
+  // arena rect inside stage
+  arena={ x0:24, y0:90, x1:W-24, y1:H-118 };
 
-  G.player = {
-    x: W*0.5, targetX: W*0.5, y: H*0.74,
-    speed: baseSpeed, carb: 0.15, stun: 0,
-    boosting:false, hue:0, bob:0, runPhase:0, faceX:1,
-  };
+  const rivalCount = clamp(3+Math.floor((level-1)/2), 3, 7);
+  const cols=['#3aa0ff','#9b59ff','#2ee6a6','#ff7ad9','#ffa53a','#7CFC00','#ff5b5b'];
+  const names=['Rio','Max','Zoe','Kai','Ivy','Leo','Mia'];
 
-  // rivals: progress along the same track, varied pacing
-  G.rivals = [];
-  const names=['Rio','Max','Zoe','Kai','Ivy'];
-  const cols=['#3aa0ff','#9b59ff','#2ee6a6','#ff7ad9','#ffa53a'];
-  for(let i=0;i<NUM_RIVALS;i++){
-    G.rivals.push({
-      name:names[i], col:cols[i],
-      prog:rnd(0,40),
-      base: baseSpeed*rnd(0.86,1.04) + level*rnd(2,6),
-      phase: rnd(0,6.28), amp: rnd(8,26),
-      surge: 0,
-      x: W*(0.18 + i*0.64/(NUM_RIVALS-1)),  // spread across lanes
-      runPhase: rnd(0,6.28),
-    });
+  G.ents=[];
+  G.player=newEntity({ x:(arena.x0+arena.x1)/2, y:arena.y1-60, r:17, col:'#e10916', name:'ТЫ', isPlayer:true,
+    maxSpd:252, accel:1700 });
+  G.ents.push(G.player);
+  for(let i=0;i<rivalCount;i++){
+    const ang=(i/rivalCount)*6.28;
+    G.ents.push(newEntity({
+      x:(arena.x0+arena.x1)/2+Math.cos(ang)*W*0.28,
+      y:(arena.y0+arena.y1)/2+Math.sin(ang)*H*0.18,
+      r:16, col:cols[i], name:names[i],
+      maxSpd: 224 + level*4 + i*2,        // rivals get faster each level
+      accel: 1500 + level*30,
+      aggro: clamp(0.55 + level*0.05, 0.55, 1.0),
+    }));
   }
-
-  // procedural track content
-  G.obstacles=[]; G.bubbles=[];
-  const density = 1 + level*0.12;
-  for(let d=420; d<G.goal-260; d+=rnd(150,250)/density){
-    if(Math.random()<0.78){
-      G.obstacles.push({ d, x: rnd(W*0.16,W*0.84), r: rnd(24,34), hit:false,
-        sway: Math.random()<0.4? rnd(20,46):0, ph:rnd(0,6.28) });
-    }
-    // bubble cluster on a guided line (the "fizz trail")
-    if(Math.random()<0.7){
-      const bx=rnd(W*0.2,W*0.8);
-      const n=Math.floor(rnd(2,5));
-      for(let k=0;k<n;k++){
-        G.bubbles.push({ d:d+k*42, x:bx+rnd(-22,22), r:rnd(11,16), got:false, ph:rnd(0,6.28) });
-      }
-    }
+  // obstacles (cola crates / ice) — more each level
+  G.obstacles=[];
+  const oc=clamp(2+Math.floor(level/2),2,7);
+  for(let i=0;i<oc;i++){
+    let ox,oy,ok,tries=0;
+    do{ ox=rnd(arena.x0+50,arena.x1-50); oy=rnd(arena.y0+70,arena.y1-90); ok=true; tries++;
+      for(const o of G.obstacles){ if(len(ox-o.x,oy-o.y)<90) ok=false; }
+      if(len(ox-G.player.x,oy-G.player.y)<90) ok=false;
+    }while(!ok && tries<30);
+    G.obstacles.push({x:ox,y:oy,r:rnd(22,30)});
   }
-  G.finishCan = { d: G.goal };
-  G.particles=[];
+  // the can starts free in the middle
+  G.can={ x:(arena.x0+arena.x1)/2, y:(arena.y0+arena.y1)/2, carrier:null, bob:0 };
   G.state='play';
   show('menu',false); show('result',false);
-  document.getElementById('lvlNum').textContent = level;
-  sfx.fizz();
+  sfx.grab();
 }
 
-// ---- input ----
-let pointerActive=false;
-function setPointer(active,x){
-  pointerActive=active;
-  if(G.player){
-    G.player.boosting = active;
-    if(x!=null){
-      const r=cv.getBoundingClientRect();
-      G.player.targetX = clamp(((x-r.left)/r.width)*W, W*0.1, W*0.9);
-    }
-  }
-}
-cv.addEventListener('pointerdown',e=>{ audio(); setPointer(true,e.clientX); e.preventDefault(); });
-cv.addEventListener('pointermove',e=>{ if(pointerActive) setPointer(true,e.clientX); });
-window.addEventListener('pointerup',()=> setPointer(false,null));
-window.addEventListener('pointercancel',()=> setPointer(false,null));
-// keyboard (desktop)
+// ---------- input ----------
+const DASH_BTN={x:0,y:0,r:46};
+function updateDashBtnPos(){ DASH_BTN.x=W-66; DASH_BTN.y=H-72; }
+let joyId=null, joyOX=0, joyOY=0, joyVX=0, joyVY=0;
 const keys={};
-window.addEventListener('keydown',e=>{ keys[e.key]=true; if(e.key===' '||e.key==='ArrowUp'){audio();} });
-window.addEventListener('keyup',e=>{ keys[e.key]=false; });
+function toLocal(clientX,clientY){ const r=cv.getBoundingClientRect();
+  return { x:((clientX-r.left)/r.width)*W, y:((clientY-r.top)/r.height)*H }; }
 
-// ---- update ----
+cv.addEventListener('pointerdown',e=>{ audio(); e.preventDefault();
+  const p=toLocal(e.clientX,e.clientY);
+  if(len(p.x-DASH_BTN.x,p.y-DASH_BTN.y)<DASH_BTN.r+14){ doDash(G.player); return; }
+  joyId=e.pointerId; joyOX=p.x; joyOY=p.y; joyVX=0; joyVY=0;
+});
+cv.addEventListener('pointermove',e=>{ if(e.pointerId!==joyId)return;
+  const p=toLocal(e.clientX,e.clientY);
+  let dx=p.x-joyOX, dy=p.y-joyOY, d=len(dx,dy), max=46;
+  if(d>max){ joyOX=p.x-dx/d*max; joyOY=p.y-dy/d*max; d=max; }   // sliding origin
+  joyVX=dx/max; joyVY=dy/max;
+});
+function endJoy(e){ if(e.pointerId===joyId){ joyId=null; joyVX=0; joyVY=0; } }
+window.addEventListener('pointerup',endJoy);
+window.addEventListener('pointercancel',endJoy);
+window.addEventListener('keydown',e=>{ keys[e.key.toLowerCase()]=true; if(e.key===' '){audio();doDash(G.player);e.preventDefault();} });
+window.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+
+function doDash(e){
+  if(!e||G.state!=='play'||e.stun>0||e.dashCd>0) return;
+  let dx=e.fx, dy=e.fy, d=len(dx,dy); if(d<.1){dx=0;dy=-1;d=1;}
+  e.vx+=dx/d*340; e.vy+=dy/d*340; e.dashT=0.17; e.dashCd=1.0;
+  sfx.dash();
+  for(let i=0;i<6;i++) spawnP(e.x,e.y,e.col,rnd(2,3.5));
+}
+
+// ---------- loop ----------
 let last=performance.now();
 function loop(now){
   let dt=Math.min((now-last)/1000,0.05); last=now;
   if(G.state==='play') update(dt);
-  else if(G.state==='finishing') winUpdate(dt);
-  else if(G.state==='losing') loseUpdate(dt);
+  else if(G.state==='finishing') endUpdate(dt);
   render();
   requestAnimationFrame(loop);
 }
 
+// ---------- update ----------
 function update(dt){
-  const p=G.player;
-  G.t += dt;
+  G.t+=dt;
+  updateDashBtnPos();
 
-  // keyboard steering/boost
-  let kBoost = keys[' ']||keys['ArrowUp'];
-  if(keys['ArrowLeft']) p.targetX = clamp(p.targetX-460*dt, W*0.1, W*0.9);
-  if(keys['ArrowRight']) p.targetX = clamp(p.targetX+460*dt, W*0.1, W*0.9);
-  const boosting = (p.boosting||kBoost) && p.stun<=0;
+  // player desired direction (joystick or keys)
+  let pdx=joyVX, pdy=joyVY;
+  if(keys['arrowleft']||keys['a']) pdx-=1;
+  if(keys['arrowright']||keys['d']) pdx+=1;
+  if(keys['arrowup']||keys['w']) pdy-=1;
+  if(keys['arrowdown']||keys['s']) pdy+=1;
+  const pml=len(pdx,pdy); if(pml>1){ pdx/=pml; pdy/=pml; }
+  G.player._dx=pdx; G.player._dy=pdy;
 
-  // ---- FIZZ CONTROL: carbonation meter ----
-  if(boosting){ p.carb += dt*0.62; } else { p.carb -= dt*0.55; }
-  p.carb = clamp(p.carb,0,1);
-  if(p.carb>=1 && p.stun<=0){
-    // overcharge -> POP
-    p.stun = 0.85; p.carb = 0.25;
-    G.shake = 16; G.flash=0.8; sfx.pop();
-    for(let i=0;i<26;i++) spawnParticle(p.x,p.y,'#ffd23f',rnd(2.5,5));
-  }
+  // AI desired directions
+  for(const e of G.ents){ if(e.isPlayer) continue; aiThink(e,dt); }
 
-  // target speed from boost + carbonation efficiency (sweet spot ~0.4-0.8)
-  let target = G.baseSpeed*0.62;
-  if(boosting){
-    const eff = 1 - Math.max(0, p.carb-0.8)*2.2;   // pushing into red loses power
-    target = G.baseSpeed*(1.35*Math.max(0.35,eff));
-  }
-  if(p.stun>0){ p.stun-=dt; target = G.baseSpeed*0.2; }
-  p.speed += (target-p.speed)*Math.min(1,dt*6);
-
-  // advance world
-  const adv = p.speed*dt;
-  G.scroll += adv;
-
-  // steering smoothing
-  const prevX=p.x;
-  p.x += (p.targetX-p.x)*Math.min(1,dt*10);
-  p.bob += dt*10;
-  if(Math.abs(p.x-prevX)>0.3) p.faceX = p.x>prevX?1:-1;
-  // running cadence scales with speed (legs pump faster when sprinting)
-  p.runPhase += (p.stun>0 ? dt*4 : dt*(2.5 + p.speed*0.05));
-
-  // ---- collisions ----
-  const screenD = d=> p.y - (d - G.scroll);   // y on screen for a track distance d
-  for(const o of G.obstacles){
-    if(o.hit) continue;
-    const oy = screenD(o.d);
-    if(oy<-60||oy>H+60) continue;
-    const ox = o.x + (o.sway? Math.sin(G.t*2+o.ph)*o.sway:0);
-    if(Math.abs(ox-p.x)<o.r+22 && Math.abs(oy-p.y)<o.r+26){
-      o.hit=true; p.speed*=0.4; if(p.stun<=0)p.stun=0.45;
-      G.shake=12; sfx.hit();
-      for(let i=0;i<14;i++) spawnParticle(ox,oy,'#bfe9ff',rnd(2,4));
-    }
-  }
-  for(const b of G.bubbles){
-    if(b.got) continue;
-    const by=screenD(b.d);
-    if(by<-40||by>H+40) continue;
-    const bx=b.x+Math.sin(G.t*3+b.ph)*6;
-    if(Math.abs(bx-p.x)<b.r+24 && Math.abs(by-p.y)<b.r+26){
-      b.got=true; G.bubblesGot++; p.speed+=46; sfx.bubble();
-      for(let i=0;i<6;i++) spawnParticle(bx,by,'#fff4e0',rnd(1.5,3));
+  // integrate movement
+  for(const e of G.ents){
+    if(e.dashCd>0) e.dashCd-=dt;
+    if(e.dashT>0) e.dashT-=dt;
+    if(e.stun>0){ e.stun-=dt; e._dx=0; e._dy=0; }
+    if(e.grace>0) e.grace-=dt;
+    const carrying = G.can.carrier===e;
+    const spd = carrying? e.maxSpd*0.82 : e.maxSpd;          // carrier is slower (juicy risk)
+    const acc = e.accel;
+    e.vx += (e._dx||0)*acc*dt;
+    e.vy += (e._dy||0)*acc*dt;
+    // friction
+    const fr=Math.pow(0.0023,dt);
+    e.vx*=fr; e.vy*=fr;
+    // clamp speed
+    const cap = e.dashT>0? 460 : spd;
+    const v=len(e.vx,e.vy); if(v>cap){ e.vx=e.vx/v*cap; e.vy=e.vy/v*cap; }
+    e.x+=e.vx*dt; e.y+=e.vy*dt;
+    // facing + legs
+    if(v>20){ e.fx=e.vx/v; e.fy=e.vy/v; e.legPhase+=dt*(4+v*0.03); }
+    // arena walls
+    if(e.x<arena.x0+e.r){ e.x=arena.x0+e.r; e.vx*=-0.4; }
+    if(e.x>arena.x1-e.r){ e.x=arena.x1-e.r; e.vx*=-0.4; }
+    if(e.y<arena.y0+e.r){ e.y=arena.y0+e.r; e.vy*=-0.4; }
+    if(e.y>arena.y1-e.r){ e.y=arena.y1-e.r; e.vy*=-0.4; }
+    // obstacle collision
+    for(const o of G.obstacles){
+      const dx=e.x-o.x, dy=e.y-o.y, d=len(dx,dy), min=e.r+o.r;
+      if(d<min && d>0.01){ const nx=dx/d, ny=dy/d; e.x=o.x+nx*min; e.y=o.y+ny*min;
+        const dot=e.vx*nx+e.vy*ny; e.vx-=1.4*dot*nx; e.vy-=1.4*dot*ny; }
     }
   }
 
-  // ---- rivals ----
-  for(const r of G.rivals){
-    r.surge += rnd(-1,1)*dt; r.surge=clamp(r.surge,-0.12,0.18);
-    const sp = r.base*(1+r.surge) + Math.sin(G.t*1.6+r.phase)*r.amp;
-    r.prog += sp*dt;
-    r.runPhase += dt*(2.5 + sp*0.05);   // legs pump with their speed
+  // entity-entity soft push
+  for(let i=0;i<G.ents.length;i++) for(let j=i+1;j<G.ents.length;j++){
+    const a=G.ents[i], b=G.ents[j];
+    const dx=b.x-a.x, dy=b.y-a.y, d=len(dx,dy), min=a.r+b.r;
+    if(d<min && d>0.01){ const nx=dx/d, ny=dy/d, ov=(min-d)/2;
+      a.x-=nx*ov; a.y-=ny*ov; b.x+=nx*ov; b.y+=ny*ov; }
   }
 
-  // ---- particles ----
-  for(const pt of G.particles){ pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.12; pt.life-=dt; }
-  G.particles=G.particles.filter(pt=>pt.life>0);
-
-  // bubble trail from player when boosting (juice)
-  if(boosting && Math.random()<0.6){
-    spawnParticle(p.x+rnd(-14,14), p.y+26, '#fff4e0', rnd(1.5,3), -0.6);
+  // ---- THE CAN: pickup / steal / sip ----
+  const can=G.can;
+  if(!can.carrier){
+    can.bob+=dt*4;
+    // first to touch grabs it
+    for(const e of G.ents){
+      if(len(e.x-can.x,e.y-can.y)<e.r+16){ can.carrier=e; e.grace=0.35; sfx.grab(); flashAt(0.4);
+        for(let i=0;i<12;i++) spawnP(can.x,can.y,'#ffd23f',rnd(2,4)); break; }
+    }
+  } else {
+    const c=can.carrier;
+    can.x=c.x; can.y=c.y-c.r-6;
+    // sip: fill carrier meter
+    const before=c.meter;
+    c.meter=clamp(c.meter+dt*28,0,WIN_METER);
+    if(Math.floor(c.meter/8)>Math.floor(before/8)) sfx.sip();
+    if(Math.random()<0.4) spawnP(can.x+rnd(-6,6),can.y,'#fff4e0',rnd(1.2,2.4),-1);
+    // steal: a DASHING attacker that touches the carrier takes it
+    if(c.grace<=0){
+      for(const e of G.ents){
+        if(e===c) continue;
+        if(e.dashT>0 && len(e.x-c.x,e.y-c.y)<e.r+c.r+2){
+          can.carrier=e; e.grace=0.4; e.steals++;
+          // knockback the loser
+          const dx=c.x-e.x, dy=c.y-e.y, d=len(dx,dy)||1;
+          c.vx+=dx/d*220; c.vy+=dy/d*220; c.stun=0.22;
+          G.shake=12; sfx.steal(); flashAt(0.5);
+          for(let i=0;i<14;i++) spawnP(c.x,c.y,e.col,rnd(2,4));
+          break;
+        }
+      }
+    }
   }
 
-  if(G.shake>0) G.shake*=0.86;
+  // particles
+  for(const p of G.particles){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life-=dt; }
+  G.particles=G.particles.filter(p=>p.life>0);
+  if(G.shake>0.4) G.shake*=0.86; else G.shake=0;
   if(G.flash>0) G.flash-=dt*2.2;
 
-  // ---- finish check ----
-  if(G.scroll>=G.goal){ finish(true); return; }
-  for(const r of G.rivals){ if(r.prog>=G.goal){ finish(false); return; } }
-
-  // HUD
-  updateHUD();
-}
-
-function spawnParticle(x,y,col,r,vy){
-  G.particles.push({x,y,vx:rnd(-1.3,1.3),vy:vy!=null?vy:rnd(-2.5,-0.5),life:rnd(.4,.9),col,r});
-}
-
-function rankOf(){
-  let ahead=0;
-  for(const r of G.rivals){ if(r.prog>G.scroll) ahead++; }
-  return ahead+1;
-}
-function updateHUD(){
-  document.getElementById('carbFill').style.height = (G.player.carb*100)+'%';
-  document.getElementById('carbFill').style.filter = G.player.carb>0.8?'brightness(1.4) saturate(1.4)':'none';
-  document.getElementById('rankNum').textContent = rankOf()+'/'+(NUM_RIVALS+1);
-}
-
-function finish(won){
-  if(won){ startWin(); } else { startLose(); }
-}
-
-// --- LOSE SEQUENCE: a rival drinks YOUR Coca-Cola while the hero arrives too late ---
-function startLose(){
-  G.won=false; G.state='losing'; G.loseT=0;
-  G.winner = G.rivals.reduce((a,b)=>b.prog>a.prog?b:a);
-  G.shake=6; tone(160,.45,.18,'sawtooth');
-}
-function loseUpdate(dt){
-  G.loseT+=dt;
-  const p=G.player;
-  p.x += (W*0.5-p.x)*Math.min(1,dt*5);
-  p.runPhase += dt*2;                       // slow, out of breath
-  if(G.loseT>0.55 && Math.random()<0.5) spawnParticle(W*0.5, H*0.42-30, '#fff4e0', rnd(1.5,3), -1);
-  for(const pt of G.particles){ pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.12; pt.life-=dt; }
-  G.particles=G.particles.filter(pt=>pt.life>0);
-  if(G.shake>0) G.shake*=0.9;
-  if(G.loseT>2.0) showResult(false);
-}
-function drawLoseSequence(){
-  const t=G.loseT, win=G.winner;
-  const wx=W*0.5, wy=H*0.42;
-  // the rival who stole the can, drinking it
-  if(t<=0.55){
-    const k=clamp(t/0.55,0,1);
-    const cy=(wy-130)+((wy-26)-(wy-130))*k;
-    drawHuman(wx,wy,1.05,win.col, G.t*10, 0, 1, true, false, 0);
-    drawCan(wx,cy,17,50,'#e10916','#fff',false);
-  } else {
-    const d=clamp((t-0.55)/0.5,0,1);
-    drawHuman(wx,wy,1.05,win.col, G.t*4, 0, 1, false, false, d);
-    ctx.save(); ctx.translate(wx+3,wy-30); ctx.rotate(d*0.55);
-    drawCan(0,0,13,40,'#e10916','#fff',false); ctx.restore();
+  // ---- win / lose ----
+  for(const e of G.ents){
+    if(e.meter>=WIN_METER){ startEnd(e); return; }
   }
-  ctx.fillStyle=win.col; ctx.font='900 14px sans-serif'; ctx.textAlign='center';
-  ctx.fillText('🏆 '+win.name, wx, wy-58);
-  // hero arrives too late, slumped & disappointed
-  const hx=G.player.x, hy=H*0.8;
-  drawHuman(hx,hy,0.95,'#e10916', G.player.runPhase, 0.05, G.player.faceX, false, true, 0);
-  ctx.fillStyle='rgba(180,200,255,0.95)'; ctx.font='900 18px sans-serif';
-  ctx.fillText('. . .', hx, hy-46);
 }
 
-// --- WIN SEQUENCE: hero grabs the Coca-Cola and drinks it (played before overlay) ---
-function startWin(){
-  G.won=true; G.state='finishing'; G.finishT=0; G._confettiDone=false;
-  G.player.targetX=W*0.5; G.shake=8; sfx.win();
-}
-function winUpdate(dt){
-  G.finishT+=dt;
-  const p=G.player;
-  p.x += (W*0.5-p.x)*Math.min(1,dt*6);
-  p.runPhase += dt*5;
-  if(G.finishT>0.55 && Math.random()<0.6) spawnParticle(p.x, p.y-32, '#fff4e0', rnd(1.5,3), -1.2);
-  if(!G._confettiDone && G.finishT>0.75){ G._confettiDone=true;
-    for(let i=0;i<60;i++) G.particles.push({x:rnd(0,W),y:rnd(-H*0.3,0),vx:rnd(-2,2),vy:rnd(1,4),life:rnd(1.5,2.6),
-      col:['#ffd23f','#e10916','#fff','#2ee6a6','#3aa0ff'][i%5],r:rnd(3,6)});
-    [0,1,2,3].forEach(i=>setTimeout(sfx.glug,i*150));
+// ---------- AI ----------
+function aiThink(e,dt){
+  const can=G.can;
+  let tx,ty, want=e.aggro;
+  if(!can.carrier){                          // scramble for free can
+    tx=can.x; ty=can.y;
+  } else if(can.carrier===e){                // I hold it -> flee + drink
+    // flee from nearest other
+    let best=null,bd=1e9;
+    for(const o of G.ents){ if(o===e)continue; const d=len(o.x-e.x,o.y-e.y); if(d<bd){bd=d;best=o;} }
+    if(best && bd<150){ tx=e.x-(best.x-e.x); ty=e.y-(best.y-e.y);
+      if(bd<60 && e.dashCd<=0 && Math.random()<0.06+e.aggro*0.05) doDash(e); }
+    else { tx=(arena.x0+arena.x1)/2+Math.sin(G.t*1.3+e.legPhase)*120; ty=(arena.y0+arena.y1)/2+Math.cos(G.t+e.legPhase)*120; }
+    want=0.9;
+  } else {                                   // chase the carrier and dash-steal
+    const c=can.carrier; tx=c.x; ty=c.y;
+    const d=len(c.x-e.x,c.y-e.y);
+    if(d<74 && e.dashCd<=0 && Math.random()<0.08+e.aggro*0.06) doDash(e);
   }
-  for(const pt of G.particles){ pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.12; pt.life-=dt; }
-  G.particles=G.particles.filter(pt=>pt.life>0);
-  if(G.shake>0) G.shake*=0.9;
-  if(G.finishT>1.9) showResult(true);
+  let dx=tx-e.x, dy=ty-e.y, d=len(dx,dy)||1;
+  // small noise so they don't move identically
+  dx+=Math.sin(G.t*2+e.legPhase)*0.15*d; dy+=Math.cos(G.t*2+e.legPhase)*0.15*d;
+  d=len(dx,dy)||1;
+  e._dx=dx/d*want; e._dy=dy/d*want;
 }
-function drawWinSequence(){
-  const p=G.player, t=G.finishT;
-  if(t<=0.55){
-    // prize can descends from above into the hero's raised hands
-    const k=clamp(t/0.55,0,1);
-    const cy = (p.y-150) + ((p.y-26)-(p.y-150))*k;
-    const gl=ctx.createRadialGradient(p.x,cy,4,p.x,cy,70);
-    gl.addColorStop(0,'rgba(255,210,63,0.5)'); gl.addColorStop(1,'rgba(255,210,63,0)');
-    ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(p.x,cy,70,0,7); ctx.fill();
-    drawRunner(p,{drink:0});
-    drawCan(p.x, cy, 18, 52, '#e10916', '#fff', false);
-  } else {
-    // drinking: head tips back, can tilts up to the mouth
-    const d=clamp((t-0.55)/0.5,0,1);
-    drawRunner(p,{drink:d});
-    ctx.save(); ctx.translate(p.x + p.faceX*3, p.y-30); ctx.rotate(p.faceX*d*0.55);
-    drawCan(0,0,13,40,'#e10916','#fff',false);
-    ctx.restore();
-  }
+
+// ---------- end sequence ----------
+function startEnd(winner){
+  G.winner=winner; G.won=winner.isPlayer; G.state='finishing'; G.endT=0;
+  if(G.won){ sfx.win(); for(let i=0;i<70;i++) G.particles.push({x:rnd(0,W),y:rnd(-H*0.3,0),
+      vx:rnd(-2,2),vy:rnd(1,4),life:rnd(1.6,2.8),col:['#ffd23f','#e10916','#fff','#2ee6a6','#3aa0ff'][i%5],r:rnd(3,6)}); }
+  else sfx.lose();
+  G.shake=10;
+}
+function endUpdate(dt){
+  G.endT+=dt;
+  const w=G.winner;
+  // winner sips remaining + bubbles
+  if(G.endT<1.0 && Math.random()<0.7) spawnP(w.x,w.y-w.r-8,'#fff4e0',rnd(1.5,3),-1.4);
+  for(const p of G.particles){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life-=dt; }
+  G.particles=G.particles.filter(p=>p.life>0);
+  if(G.shake>0.4) G.shake*=0.9; else G.shake=0;
+  if(G.endT>1.5) showResult(G.won);
 }
 function showResult(won){
-  G.won=won; G.state='result';
-  const res=document.getElementById('result');
-  res.classList.remove('win','lose');
-  if(won){
-    res.classList.add('win');
+  G.state='result';
+  const res=document.getElementById('result'); res.classList.remove('win','lose');
+  const place=rankOf(G.player);
+  if(won){ res.classList.add('win');
     document.getElementById('resTitle').textContent='ПОБЕДА!';
-    document.getElementById('resSub').textContent='Ты добежал первым и осушил Coca-Cola до дна! 🥤';
+    document.getElementById('resSub').textContent='Ты отнял последнюю Coca-Cola и осушил её до дна! 🥤';
     document.getElementById('nextBtn').classList.remove('hidden');
-  } else {
-    res.classList.add('lose');
-    document.getElementById('resTitle').textContent='ПЕРЕХВАТИЛИ!';
-    const w=G.rivals.reduce((a,b)=>b.prog>a.prog?b:a);
-    document.getElementById('resSub').textContent=w.name+' выхватил последнюю банку у тебя из-под носа. Ещё разок?';
+  } else { res.classList.add('lose');
+    document.getElementById('resTitle').textContent='ОБОШЛИ!';
+    document.getElementById('resSub').textContent=G.winner.name+' допил банку первым. Реванш?';
     document.getElementById('nextBtn').classList.add('hidden');
   }
-  document.getElementById('resRank').textContent=rankOf();
-  document.getElementById('resBub').textContent=G.bubblesGot;
-  document.getElementById('resTime').textContent=G.t.toFixed(1)+'s';
+  document.getElementById('resRank').textContent=place+(place===1?'st':place===2?'nd':place===3?'rd':'th');
+  document.getElementById('resSteal').textContent=G.player.steals;
+  document.getElementById('resTime').textContent=G.t.toFixed(0)+'s';
   show('result',true);
 }
+function rankOf(e){ let ahead=0; for(const o of G.ents){ if(o!==e && o.meter>e.meter) ahead++; } return ahead+1; }
 
-// ============================== RENDER =====================================
+function spawnP(x,y,col,r,vy){ G.particles.push({x,y,vx:rnd(-1.3,1.3),vy:vy!=null?vy:rnd(-2,-.3),life:rnd(.4,.9),col,r}); }
+function flashAt(v){ G.flash=Math.max(G.flash,v); }
+
+// ============================ RENDER =====================================
 function render(){
-  const sw=cv.width, sh=cv.height;
-  const sx=sw/W; // scale logical->device (uniform; H matches aspect)
-  ctx.setTransform(sx,0,0,sx,0,0);
-  ctx.clearRect(0,0,W,H);
-
-  // shake
+  const sx=cv.width/W; ctx.setTransform(sx,0,0,sx,0,0); ctx.clearRect(0,0,W,H);
   ctx.save();
-  if(G.shake>0.4){ ctx.translate(rnd(-G.shake,G.shake)*0.4, rnd(-G.shake,G.shake)*0.4); }
+  if(G.shake>0.4) ctx.translate(rnd(-G.shake,G.shake)*0.4,rnd(-G.shake,G.shake)*0.4);
 
-  drawBackground();
-
-  if(G.state==='finishing'){
-    drawTrack();
-    drawObstaclesAndBubbles();
-    drawRivals();
-    drawWinSequence();
+  drawBg();
+  if(G.state!=='menu'){
+    drawArena();
+    drawObstacles();
+    if(G.can && !G.can.carrier) drawFreeCan();
+    // draw entities sorted by y (depth)
+    const sorted=[...G.ents].sort((a,b)=>a.y-b.y);
+    for(const e of sorted) drawRunner(e);
     drawParticles();
-    drawRivalRail();
-  } else if(G.state==='losing'){
-    drawTrack();
-    drawObstaclesAndBubbles();
-    drawLoseSequence();
-    drawParticles();
-    drawRivalRail();
-  } else if(G.state==='play'||G.state==='result'){
-    drawTrack();
-    drawFinish();
-    drawObstaclesAndBubbles();
-    drawRivals();
-    if(G.player) drawRunner(G.player);
-    drawParticles();
-    drawRivalRail();
+    drawHUD();
+    if(G.state==='finishing') drawEndBanner();
   }
-
   ctx.restore();
-
-  // flash
-  const f=document.getElementById('flash');
-  f.style.opacity = G.flash>0? Math.min(0.7,G.flash):0;
+  document.getElementById('flash').style.opacity=G.flash>0?Math.min(.6,G.flash):0;
 }
 
-function drawBackground(){
+function drawBg(){
   const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#4a0710'); g.addColorStop(0.5,'#26040a'); g.addColorStop(1,'#15030a');
+  g.addColorStop(0,'#3a0610'); g.addColorStop(.55,'#220a0a'); g.addColorStop(1,'#140a08');
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  // moving carbonation streaks
-  const off=(G.scroll*0.4)%80;
-  ctx.globalAlpha=0.06; ctx.fillStyle='#fff';
-  for(let y=-80+off; y<H; y+=80){
-    for(let x=20;x<W;x+=70){ ctx.beginPath(); ctx.arc(x+((y*0.3)%30),y,3,0,7); ctx.fill(); }
-  }
-  ctx.globalAlpha=1;
 }
-
-function drawTrack(){
-  // side walls (vending-machine shaft vibe)
-  ctx.fillStyle='rgba(0,0,0,0.28)';
-  ctx.fillRect(0,0,W*0.06,H); ctx.fillRect(W*0.94,0,W*0.06,H);
-  ctx.fillStyle='rgba(255,255,255,0.05)';
-  const off=(G.scroll*0.6)%60;
-  for(let y=-60+off;y<H;y+=60){ ctx.fillRect(W*0.06,y,W*0.88,2); }
+function drawArena(){
+  // floor
+  ctx.fillStyle='rgba(255,255,255,0.04)';
+  roundRect(arena.x0,arena.y0,arena.x1-arena.x0,arena.y1-arena.y0,18); ctx.fill();
+  ctx.strokeStyle='rgba(255,210,63,0.25)'; ctx.lineWidth=3;
+  roundRect(arena.x0,arena.y0,arena.x1-arena.x0,arena.y1-arena.y0,18); ctx.stroke();
+  // floor grid
+  ctx.strokeStyle='rgba(255,255,255,0.045)'; ctx.lineWidth=1;
+  for(let x=arena.x0+40;x<arena.x1;x+=46){ ctx.beginPath(); ctx.moveTo(x,arena.y0); ctx.lineTo(x,arena.y1); ctx.stroke(); }
+  for(let y=arena.y0+40;y<arena.y1;y+=46){ ctx.beginPath(); ctx.moveTo(arena.x0,y); ctx.lineTo(arena.x1,y); ctx.stroke(); }
 }
-
-function drawFinish(){
-  const fy = G.player ? (G.player.y - (G.goal - G.scroll)) : -9999;
-  if(fy>H+80||fy<-200) return;
-  // vending machine / podium with the LAST CAN
-  ctx.save();
-  ctx.translate(W/2, fy);
-  // glow
-  const gl=ctx.createRadialGradient(0,0,8,0,0,120);
-  gl.addColorStop(0,'rgba(255,210,63,0.55)'); gl.addColorStop(1,'rgba(255,210,63,0)');
-  ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(0,0,120,0,7); ctx.fill();
-  // banner
-  ctx.fillStyle='#ffd23f'; ctx.font='900 26px sans-serif'; ctx.textAlign='center';
-  ctx.fillText('ПОСЛЕДНЯЯ БАНКА', 0, -78);
-  // the big can
-  drawCan(0,-10,46,150,'#e10916','#ffd23f',true);
-  ctx.restore();
-}
-
-function drawObstaclesAndBubbles(){
-  const p=G.player; if(!p) return;
-  const screenD = d=> p.y - (d - G.scroll);
-  // ice-cube obstacles
+function drawObstacles(){
   for(const o of G.obstacles){
-    if(o.hit) continue;
-    const oy=screenD(o.d); if(oy<-60||oy>H+60) continue;
-    const ox=o.x+(o.sway?Math.sin(G.t*2+o.ph)*o.sway:0);
-    ctx.save(); ctx.translate(ox,oy); ctx.rotate(Math.sin(o.d*0.01)*0.3);
     ctx.fillStyle='rgba(190,235,255,0.85)';
-    roundRect(-o.r,-o.r,o.r*2,o.r*2,8); ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.55)'; roundRect(-o.r+5,-o.r+5,o.r*0.7,o.r*0.7,4); ctx.fill();
-    ctx.strokeStyle='rgba(120,200,255,0.7)'; ctx.lineWidth=2;
-    roundRect(-o.r,-o.r,o.r*2,o.r*2,8); ctx.stroke();
-    ctx.restore();
-  }
-  // bubbles (the fizz trail / pickups)
-  for(const b of G.bubbles){
-    if(b.got) continue;
-    const by=screenD(b.d); if(by<-40||by>H+40) continue;
-    const bx=b.x+Math.sin(G.t*3+b.ph)*6;
-    const grd=ctx.createRadialGradient(bx-b.r*0.3,by-b.r*0.3,1,bx,by,b.r);
-    grd.addColorStop(0,'rgba(255,255,255,0.95)'); grd.addColorStop(0.6,'rgba(255,244,224,0.6)');
-    grd.addColorStop(1,'rgba(255,210,63,0.15)');
-    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(bx,by,b.r,0,7); ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
+    roundRect(o.x-o.r,o.y-o.r,o.r*2,o.r*2,8); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.5)'; roundRect(o.x-o.r+5,o.y-o.r+5,o.r*0.6,o.r*0.6,4); ctx.fill();
+    ctx.strokeStyle='rgba(120,200,255,0.7)'; ctx.lineWidth=2; roundRect(o.x-o.r,o.y-o.r,o.r*2,o.r*2,8); ctx.stroke();
   }
 }
-
-// === Generic cartoon human (reused by player + rivals) ===
-// reach: front arm up toward the can. drink: 0..1 head tips back, arm raises can to mouth.
-function drawHuman(x,y,scale,shirt,phase,lean,faceDir,reach,tripped,drink){
-  drink = drink||0;
-  const wob = Math.sin(phase*2)*2.2;
-  ctx.save(); ctx.translate(x, y+wob*scale); ctx.scale(scale,scale);
-  ctx.save(); ctx.scale(faceDir,1); ctx.rotate(lean - drink*0.22);
-  const skin='#f2b48a', pants='#2b2f45', shoe='#fff';
-  const swing = tripped?0.2:1;
-  const a = Math.sin(phase)*swing, b = Math.sin(phase+Math.PI)*swing;
-
-  leg(0,14, a, '#1f2335','#e6e6e6');            // back leg
-  arm(0,-12, b, '#b40010', false);              // back arm
-
-  // torso (jersey)
-  ctx.fillStyle=shirt; roundRect(-9,-14,18,30,7); ctx.fill();
-  ctx.fillStyle='#fff'; ctx.font='italic 900 7px Georgia,serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.save(); ctx.rotate(-0.08); ctx.fillText('Coca-Cola',0,-2); ctx.restore();
-
-  // head (tips back while drinking)
-  ctx.save(); ctx.translate(0,-14); ctx.rotate(-drink*0.5); ctx.translate(0,14);
-  ctx.fillStyle=skin; ctx.beginPath(); ctx.arc(0,-22,8,0,7); ctx.fill();
-  ctx.fillStyle='#3a2516'; ctx.beginPath(); ctx.arc(0,-25,8,Math.PI,2*Math.PI); ctx.fill(); ctx.fillRect(-8,-26,16,3);
-  ctx.fillStyle='#1a0206'; ctx.beginPath(); ctx.arc(3,-23,1.6,0,7); ctx.fill();
-  ctx.restore();
-
-  const up = reach || drink>0;
-  arm(0,-12, a, shirt, up);                      // front arm
-  leg(0,14, b, pants, shoe);                     // front leg
-  ctx.restore(); ctx.restore();
-
-  function leg(ox,oy,ang,col,shoec){
-    const kneeX=ox+Math.sin(ang)*9, kneeY=oy+12+Math.cos(ang)*3;
-    const footX=kneeX+Math.sin(ang*0.6)*7, footY=kneeY+12;
-    ctx.strokeStyle=col; ctx.lineWidth=6; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(kneeX,kneeY); ctx.lineTo(footX,footY); ctx.stroke();
-    ctx.fillStyle=shoec; ctx.beginPath(); ctx.ellipse(footX+2,footY+1,5,3,0,0,7); ctx.fill();
-  }
-  function arm(ox,oy,ang,col,raise){
-    const elbowX=ox+Math.sin(ang)*(raise?5:8), elbowY=oy+(raise?-9:8)+Math.cos(ang)*4;
-    const handX=elbowX+Math.sin(ang)*(raise?3:7), handY=elbowY+(raise?-10:9);
-    ctx.strokeStyle=col; ctx.lineWidth=5; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(elbowX,elbowY); ctx.lineTo(handX,handY); ctx.stroke();
-    ctx.fillStyle='#f2b48a'; ctx.beginPath(); ctx.arc(handX,handY,3,0,7); ctx.fill();
-  }
+function drawFreeCan(){
+  const c=G.can, y=c.y+Math.sin(c.bob)*4;
+  const gl=ctx.createRadialGradient(c.x,y,4,c.x,y,46);
+  gl.addColorStop(0,'rgba(255,210,63,0.55)'); gl.addColorStop(1,'rgba(255,210,63,0)');
+  ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(c.x,y,46,0,7); ctx.fill();
+  drawCan(c.x,y,15,40);
+  // "!" pop
+  ctx.fillStyle='#ffd23f'; ctx.font='900 16px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('!', c.x, y-34);
 }
 
-// === THE PLAYER: best running man chasing the Coca-Cola ===
-function drawRunner(p, opts){
-  opts=opts||{};
-  const running = (p.boosting||keys[' ']||keys['ArrowUp']) && p.stun<=0;
-  const over = p.carb>0.8;
-  const lean = clamp((p.x-p.targetX)*-0.01,-0.28,0.28) + (running?0.12:0);
-
-  // ground dust / speed lines when sprinting
-  if(running && !opts.drink){
-    ctx.save(); ctx.translate(p.x,p.y);
-    ctx.strokeStyle='rgba(255,244,224,0.5)'; ctx.lineWidth=3; ctx.lineCap='round';
-    for(let i=0;i<3;i++){ const yy=18+i*9, ln=14+Math.sin(G.t*30+i)*8;
-      ctx.beginPath(); ctx.moveTo(-20-i*4, yy); ctx.lineTo(-20-i*4-ln, yy); ctx.stroke(); }
-    ctx.restore();
-  }
-
-  drawHuman(p.x, p.y, 1, over?'#ff3b3b':'#e10916', p.runPhase, lean, p.faceX, true, p.stun>0, opts.drink||0);
-
-  ctx.save(); ctx.translate(p.x,p.y);
-  if(over){ ctx.fillStyle='#8fd3ff'; ctx.beginPath(); ctx.arc(7,-21,2,0,7); ctx.fill();
-    ctx.strokeStyle='rgba(255,80,80,'+(0.4+Math.sin(G.t*20)*0.35)+')'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(0,-2,30,0,7); ctx.stroke(); }
-  if(p.stun>0){ ctx.fillStyle='#ffd23f'; ctx.font='900 14px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('✦', Math.sin(G.t*12)*8, -34); ctx.fillText('✦', Math.sin(G.t*12+2)*-10, -30); }
-  ctx.restore();
-}
-
-// === RIVALS visible on the track (the "world" you race) ===
-function drawRivals(){
-  const p=G.player; if(!p) return;
-  for(const r of G.rivals){
-    const ry = p.y - (r.prog - G.scroll);
-    if(ry<-50 || ry>H+50) continue;
-    const rx = clamp(r.x + Math.sin(G.t*2+r.phase)*10, W*0.1, W*0.9);
-    drawHuman(rx, ry, 0.82, r.col, r.runPhase, 0.14, 1, false, false, 0);
-  }
-}
-
-// generic cola can
-function drawCan(x,y,w,h,body,band,big,stunned){
-  ctx.save(); ctx.translate(x,y);
+// top-down cartoon runner
+function drawRunner(e){
+  const carrier=G.can&&G.can.carrier===e;
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(e.x,e.y+e.r*0.7,e.r*0.95,e.r*0.5,0,0,7); ctx.fill();
+  // dash streak
+  if(e.dashT>0){ ctx.strokeStyle=e.col+'88'; ctx.lineWidth=e.r*1.4; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(e.x,e.y); ctx.lineTo(e.x-e.fx*22,e.y-e.fy*22); ctx.stroke(); }
+  // legs (two dots oscillating along facing-perpendicular)
+  const px=-e.fy, py=e.fx, sw=Math.sin(e.legPhase)*e.r*0.5;
+  ctx.fillStyle='#1f2335';
+  ctx.beginPath(); ctx.arc(e.x+px*5+e.fx*sw, e.y+py*5+e.fy*sw, e.r*0.32,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(e.x-px*5-e.fx*sw, e.y-py*5-e.fy*sw, e.r*0.32,0,7); ctx.fill();
   // body
-  const g=ctx.createLinearGradient(-w,0,w,0);
-  g.addColorStop(0,'#7c0010'); g.addColorStop(0.4,body); g.addColorStop(0.5,'#ff5a64'); g.addColorStop(0.6,body); g.addColorStop(1,'#5c000a');
-  ctx.fillStyle=g; roundRect(-w,-h/2,w*2,h,w*0.5); ctx.fill();
-  // top rim
-  ctx.fillStyle='#d9d9d9'; roundRect(-w,-h/2-6,w*2,10,4); ctx.fill();
-  ctx.fillStyle='#9a9a9a'; roundRect(-w*0.5,-h/2-9,w,5,3); ctx.fill();
-  // bottom
-  ctx.fillStyle='#b8b8b8'; roundRect(-w,h/2-5,w*2,9,4); ctx.fill();
-  // white wave band (Coca-Cola style)
-  ctx.fillStyle='#fff'; roundRect(-w,-h*0.18,w*2,h*0.36,2); ctx.fill();
-  ctx.fillStyle=body; ctx.font='italic 900 '+(big?20:9)+'px Georgia,serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('Coca-Cola',0, big?2:1);
-  // highlight
-  ctx.fillStyle='rgba(255,255,255,0.25)'; roundRect(-w*0.7,-h/2+4,w*0.28,h-8,4); ctx.fill();
-  // eyes for character charm
-  if(!big){
-    ctx.fillStyle='#fff';
-    ctx.beginPath(); ctx.arc(-7,-h*0.34,4,0,7); ctx.arc(7,-h*0.34,4,0,7); ctx.fill();
-    ctx.fillStyle='#1a0206';
-    const ed=stunned?2:0;
-    ctx.beginPath(); ctx.arc(-7+ed*Math.sin(G.t*20),-h*0.34,2,0,7); ctx.arc(7+ed*Math.sin(G.t*20),-h*0.34,2,0,7); ctx.fill();
+  const bg=ctx.createRadialGradient(e.x-e.r*0.3,e.y-e.r*0.3,2,e.x,e.y,e.r);
+  bg.addColorStop(0, e.stun>0?'#fff':lighten(e.col)); bg.addColorStop(1,e.col);
+  ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=2; ctx.stroke();
+  // head (offset toward facing)
+  ctx.fillStyle='#f2b48a'; ctx.beginPath(); ctx.arc(e.x+e.fx*e.r*0.45, e.y+e.fy*e.r*0.45, e.r*0.5,0,7); ctx.fill();
+  // player ring
+  if(e.isPlayer){ ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+3,0,7); ctx.stroke(); }
+  // carrier: glow ring + drink-progress ring + the can on top
+  if(carrier){
+    ctx.strokeStyle='rgba(255,210,63,0.9)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(e.x,e.y,e.r+6,0,7); ctx.stroke();
+    ctx.strokeStyle='#ffd23f'; ctx.lineWidth=4; ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(e.x,e.y,e.r+6,-Math.PI/2,-Math.PI/2+(e.meter/WIN_METER)*6.283); ctx.stroke();
+    drawCan(e.x, e.y-e.r-9, 11, 30);
   }
-  ctx.restore();
+  // name tag for rivals leading
+  if(!e.isPlayer && e.meter>WIN_METER*0.5){
+    ctx.fillStyle=e.col; ctx.font='900 11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(e.name, e.x, e.y-e.r-16);
+  }
 }
 
+// Coca-Cola can icon
+function drawCan(x,y,w,h){
+  ctx.save(); ctx.translate(x,y);
+  const g=ctx.createLinearGradient(-w,0,w,0);
+  g.addColorStop(0,'#7c0010'); g.addColorStop(.4,'#e10916'); g.addColorStop(.5,'#ff5a64'); g.addColorStop(.6,'#e10916'); g.addColorStop(1,'#5c000a');
+  ctx.fillStyle=g; roundRect(-w,-h/2,w*2,h,w*0.5); ctx.fill();
+  ctx.fillStyle='#d9d9d9'; roundRect(-w,-h/2-4,w*2,7,3); ctx.fill();
+  ctx.fillStyle='#fff'; roundRect(-w,-h*0.16,w*2,h*0.32,2); ctx.fill();
+  ctx.fillStyle='#e10916'; ctx.font='italic 900 '+Math.max(7,w*0.7)+'px Georgia,serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('Coca-Cola',0,1);
+  ctx.restore();
+}
+function lighten(hex){
+  const n=parseInt(hex.slice(1),16); let r=(n>>16)+50,g=((n>>8)&255)+50,b=(n&255)+50;
+  r=Math.min(255,r);g=Math.min(255,g);b=Math.min(255,b);
+  return 'rgb('+r+','+g+','+b+')';
+}
 function drawParticles(){
-  for(const pt of G.particles){
-    ctx.globalAlpha=Math.max(0,Math.min(1,pt.life*1.4));
-    ctx.fillStyle=pt.col; ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.r,0,7); ctx.fill();
-  }
+  for(const p of G.particles){ ctx.globalAlpha=Math.max(0,Math.min(1,p.life*1.4));
+    ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); }
   ctx.globalAlpha=1;
 }
 
-// right-side race rail: you vs the world
-function drawRivalRail(){
-  const rx=W-16, top=70, bot=H-70, len=bot-top;
-  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=4;
-  ctx.beginPath(); ctx.moveTo(rx,top); ctx.lineTo(rx,bot); ctx.stroke();
-  // finish marker
-  ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(rx,top,5,0,7); ctx.fill();
-  const place=(prog)=>{ const f=clamp(prog/G.goal,0,1); return bot - f*len; };
-  for(const r of G.rivals){
-    const y=place(r.prog);
-    ctx.fillStyle=r.col; ctx.beginPath(); ctx.arc(rx,y,5,0,7); ctx.fill();
-  }
-  // player marker (bigger, white-ringed)
-  const py=place(G.scroll);
-  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(rx,py,8,0,7); ctx.fill();
-  ctx.fillStyle='#e10916'; ctx.beginPath(); ctx.arc(rx,py,5,0,7); ctx.fill();
+function drawHUD(){
+  // top pills
+  pill(28,'ЛВЛ '+G.level,'#fff', 'left');
+  const place=rankOf(G.player);
+  pill(28, place+(place===1?'е МЕСТО':' МЕСТО'), place===1?'#ffd23f':'#fff', 'right');
+
+  // dynamic prompt
+  let prompt='ХВАТАЙ!', pcol='#ffd23f';
+  if(G.can && G.can.carrier){ if(G.can.carrier.isPlayer){ prompt='ПЕЙ И БЕГИ!'; pcol='#2ee6a6'; }
+    else { prompt='ОТБЕРИ РЫВКОМ!'; pcol='#ff6a78'; } }
+  ctx.fillStyle=pcol; ctx.font='900 20px sans-serif'; ctx.textAlign='center'; ctx.globalAlpha=.92;
+  ctx.fillText(prompt, W/2, 64); ctx.globalAlpha=1;
+
+  // bottom: player drink meter
+  const bx=24, bw=W-48, by=H-92, bh=16;
+  ctx.fillStyle='rgba(0,0,0,0.4)'; roundRect(bx,by,bw,bh,8); ctx.fill();
+  ctx.fillStyle='#e10916'; roundRect(bx,by,bw*(G.player.meter/WIN_METER),bh,8); ctx.fill();
+  // leader marker
+  let lead=G.ents.reduce((a,b)=> (b!==G.player&&b.meter>a.meter)?b:a, {meter:-1});
+  if(lead.meter>0){ const lx=bx+bw*(lead.meter/WIN_METER);
+    ctx.strokeStyle=lead.col; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(lx,by-3); ctx.lineTo(lx,by+bh+3); ctx.stroke(); }
+  ctx.fillStyle='#fff'; ctx.font='900 12px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('ГЛОТКИ '+Math.floor(G.player.meter)+'%', bx+2, by-7);
+
+  // DASH button
+  updateDashBtnPos();
+  const ready=G.player.dashCd<=0 && G.player.stun<=0;
+  ctx.globalAlpha=ready?1:0.4;
+  ctx.fillStyle=ready?'#ffd23f':'#7a7a7a';
+  ctx.beginPath(); ctx.arc(DASH_BTN.x,DASH_BTN.y,DASH_BTN.r,0,7); ctx.fill();
+  ctx.fillStyle='#5c2e00'; ctx.font='900 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('РЫВОК',DASH_BTN.x,DASH_BTN.y);
+  ctx.globalAlpha=1; ctx.textBaseline='alphabetic';
+  if(!ready){ ctx.strokeStyle='#ffd23f'; ctx.lineWidth=4; ctx.beginPath();
+    ctx.arc(DASH_BTN.x,DASH_BTN.y,DASH_BTN.r,-Math.PI/2,-Math.PI/2+(1-G.player.dashCd/1.0)*6.283); ctx.stroke(); }
+}
+function pill(y,txt,col,side){
+  ctx.font='900 15px sans-serif';
+  const w=ctx.measureText(txt).width+24, x=side==='left'?16:W-16-w;
+  ctx.fillStyle='rgba(0,0,0,0.42)'; roundRect(x,y-20,w,28,10); ctx.fill();
+  ctx.fillStyle=col; ctx.textAlign='left'; ctx.fillText(txt,x+12,y);
+}
+function drawEndBanner(){
+  ctx.fillStyle='rgba(0,0,0,'+Math.min(0.45,G.endT*0.4)+')'; ctx.fillRect(0,0,W,H);
+  const w=G.winner, s=1+Math.min(0.6,G.endT);
+  ctx.save(); ctx.translate(w.x,w.y); ctx.scale(s,s);
+  drawCan(0,-w.r-10,13,36); ctx.restore();
+  ctx.fillStyle=G.won?'#ffd23f':'#ff6a78'; ctx.font='900 34px sans-serif'; ctx.textAlign='center';
+  ctx.fillText(G.won?'GULP! 🥤':'...', W/2, H*0.4);
 }
 
-// ---- helpers ----
-function roundRect(x,y,w,h,r){
-  r=Math.min(r,w/2,h/2);
-  ctx.beginPath();
+// ---------- misc ----------
+function roundRect(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath();
   ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
-}
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function show(id,on){ document.getElementById(id).classList.toggle('hidden',!on); }
 
-// ---- UI wiring ----
 document.getElementById('playBtn').onclick=()=>{ audio(); startLevel(1); };
 document.getElementById('nextBtn').onclick=()=>{ audio(); startLevel(G.level+1); };
 document.getElementById('retryBtn').onclick=()=>{ audio(); startLevel(G.level); };
 
-// init
-resize(); requestAnimationFrame(loop);
+resize(); updateDashBtnPos(); requestAnimationFrame(loop);
 </script>
 </body>
 </html>
