@@ -206,6 +206,8 @@ function startLevel(level){
       base: baseSpeed*rnd(0.86,1.04) + level*rnd(2,6),
       phase: rnd(0,6.28), amp: rnd(8,26),
       surge: 0,
+      x: W*(0.18 + i*0.64/(NUM_RIVALS-1)),  // spread across lanes
+      runPhase: rnd(0,6.28),
     });
   }
 
@@ -260,6 +262,7 @@ let last=performance.now();
 function loop(now){
   let dt=Math.min((now-last)/1000,0.05); last=now;
   if(G.state==='play') update(dt);
+  else if(G.state==='finishing') winUpdate(dt);
   render();
   requestAnimationFrame(loop);
 }
@@ -334,6 +337,7 @@ function update(dt){
     r.surge += rnd(-1,1)*dt; r.surge=clamp(r.surge,-0.12,0.18);
     const sp = r.base*(1+r.surge) + Math.sin(G.t*1.6+r.phase)*r.amp;
     r.prog += sp*dt;
+    r.runPhase += dt*(2.5 + sp*0.05);   // legs pump with their speed
   }
 
   // ---- particles ----
@@ -372,19 +376,59 @@ function updateHUD(){
 }
 
 function finish(won){
+  if(won){ startWin(); } else { showResult(false); }
+}
+
+// --- WIN SEQUENCE: hero grabs the Coca-Cola and drinks it (played before overlay) ---
+function startWin(){
+  G.won=true; G.state='finishing'; G.finishT=0; G._confettiDone=false;
+  G.player.targetX=W*0.5; G.shake=8; sfx.win();
+}
+function winUpdate(dt){
+  G.finishT+=dt;
+  const p=G.player;
+  p.x += (W*0.5-p.x)*Math.min(1,dt*6);
+  p.runPhase += dt*5;
+  if(G.finishT>0.55 && Math.random()<0.6) spawnParticle(p.x, p.y-32, '#fff4e0', rnd(1.5,3), -1.2);
+  if(!G._confettiDone && G.finishT>0.75){ G._confettiDone=true;
+    for(let i=0;i<60;i++) G.particles.push({x:rnd(0,W),y:rnd(-H*0.3,0),vx:rnd(-2,2),vy:rnd(1,4),life:rnd(1.5,2.6),
+      col:['#ffd23f','#e10916','#fff','#2ee6a6','#3aa0ff'][i%5],r:rnd(3,6)});
+    [0,1,2,3].forEach(i=>setTimeout(sfx.glug,i*150));
+  }
+  for(const pt of G.particles){ pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.12; pt.life-=dt; }
+  G.particles=G.particles.filter(pt=>pt.life>0);
+  if(G.shake>0) G.shake*=0.9;
+  if(G.finishT>1.9) showResult(true);
+}
+function drawWinSequence(){
+  const p=G.player, t=G.finishT;
+  if(t<=0.55){
+    // prize can descends from above into the hero's raised hands
+    const k=clamp(t/0.55,0,1);
+    const cy = (p.y-150) + ((p.y-26)-(p.y-150))*k;
+    const gl=ctx.createRadialGradient(p.x,cy,4,p.x,cy,70);
+    gl.addColorStop(0,'rgba(255,210,63,0.5)'); gl.addColorStop(1,'rgba(255,210,63,0)');
+    ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(p.x,cy,70,0,7); ctx.fill();
+    drawRunner(p,{drink:0});
+    drawCan(p.x, cy, 18, 52, '#e10916', '#fff', false);
+  } else {
+    // drinking: head tips back, can tilts up to the mouth
+    const d=clamp((t-0.55)/0.5,0,1);
+    drawRunner(p,{drink:d});
+    ctx.save(); ctx.translate(p.x + p.faceX*3, p.y-30); ctx.rotate(p.faceX*d*0.55);
+    drawCan(0,0,13,40,'#e10916','#fff',false);
+    ctx.restore();
+  }
+}
+function showResult(won){
   G.won=won; G.state='result';
   const res=document.getElementById('result');
   res.classList.remove('win','lose');
   if(won){
-    res.classList.add('win'); sfx.win();
+    res.classList.add('win');
     document.getElementById('resTitle').textContent='ПОБЕДА!';
-    document.getElementById('resSub').textContent='Ты дорвался до банки первым. Глоток чемпиона! 🥤';
+    document.getElementById('resSub').textContent='Ты добежал первым и осушил Coca-Cola до дна! 🥤';
     document.getElementById('nextBtn').classList.remove('hidden');
-    // confetti
-    for(let i=0;i<60;i++) G.particles.push({x:rnd(0,W),y:rnd(-H*0.3,0),vx:rnd(-2,2),vy:rnd(1,4),life:rnd(1.5,2.6),
-      col:['#ffd23f','#e10916','#fff','#2ee6a6','#3aa0ff'][i%5],r:rnd(3,6)});
-    // glug finisher
-    [0,1,2,3].forEach(i=>setTimeout(sfx.glug,400+i*130));
   } else {
     res.classList.add('lose');
     document.getElementById('resTitle').textContent='ПЕРЕХВАТИЛИ!';
@@ -411,10 +455,18 @@ function render(){
 
   drawBackground();
 
-  if(G.state==='play'||G.state==='result'){
+  if(G.state==='finishing'){
+    drawTrack();
+    drawObstaclesAndBubbles();
+    drawRivals();
+    drawWinSequence();
+    drawParticles();
+    drawRivalRail();
+  } else if(G.state==='play'||G.state==='result'){
     drawTrack();
     drawFinish();
     drawObstaclesAndBubbles();
+    drawRivals();
     if(G.player) drawRunner(G.player);
     drawParticles();
     drawRivalRail();
@@ -496,66 +548,37 @@ function drawObstaclesAndBubbles(){
   }
 }
 
-// === THE RUNNER: best running man chasing the Coca-Cola ===
-function drawRunner(p){
-  const running = (p.boosting||keys[' ']||keys['ArrowUp']) && p.stun<=0;
-  const over = p.carb>0.8;
-  const ph = p.runPhase;
-  const wob = Math.sin(ph*2)*2.2;                 // vertical bounce of run cycle
-  const lean = clamp((p.x-p.targetX)*-0.01,-0.28,0.28) + (running?0.12:0); // forward/turn lean
+// === Generic cartoon human (reused by player + rivals) ===
+// reach: front arm up toward the can. drink: 0..1 head tips back, arm raises can to mouth.
+function drawHuman(x,y,scale,shirt,phase,lean,faceDir,reach,tripped,drink){
+  drink = drink||0;
+  const wob = Math.sin(phase*2)*2.2;
+  ctx.save(); ctx.translate(x, y+wob*scale); ctx.scale(scale,scale);
+  ctx.save(); ctx.scale(faceDir,1); ctx.rotate(lean - drink*0.22);
+  const skin='#f2b48a', pants='#2b2f45', shoe='#fff';
+  const swing = tripped?0.2:1;
+  const a = Math.sin(phase)*swing, b = Math.sin(phase+Math.PI)*swing;
 
-  ctx.save(); ctx.translate(p.x, p.y+wob);
-  // ground dust / speed lines when sprinting
-  if(running){
-    ctx.strokeStyle='rgba(255,244,224,0.5)'; ctx.lineWidth=3; ctx.lineCap='round';
-    for(let i=0;i<3;i++){ const yy=18+i*9, ln=14+Math.sin(G.t*30+i)*8;
-      ctx.beginPath(); ctx.moveTo(-20-i*4, yy); ctx.lineTo(-20-i*4-ln, yy); ctx.stroke(); }
-  }
-  ctx.save(); ctx.scale(p.faceX,1); ctx.rotate(lean);
+  leg(0,14, a, '#1f2335','#e6e6e6');            // back leg
+  arm(0,-12, b, '#b40010', false);              // back arm
 
-  const skin='#f2b48a', shirt= over? '#ff3b3b':'#e10916', pants='#2b2f45', shoe='#fff';
-  const swing = p.stun>0 ? 0.2 : 1;               // tripped -> flail less
-  const a = Math.sin(ph)*swing, b = Math.sin(ph+Math.PI)*swing;
-
-  // ---- BACK leg ----
-  leg(0, 14, a, '#1f2335', '#e6e6e6');
-  // ---- BACK arm ----
-  arm(0,-12, b, '#b40010');
-
-  // ---- torso (jersey) ----
+  // torso (jersey)
   ctx.fillStyle=shirt; roundRect(-9,-14,18,30,7); ctx.fill();
-  // Coca-Cola swoosh stripe on jersey
   ctx.fillStyle='#fff'; ctx.font='italic 900 7px Georgia,serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.save(); ctx.rotate(-0.08); ctx.fillText('Coca-Cola',0,-2); ctx.restore();
 
-  // ---- head ----
+  // head (tips back while drinking)
+  ctx.save(); ctx.translate(0,-14); ctx.rotate(-drink*0.5); ctx.translate(0,14);
   ctx.fillStyle=skin; ctx.beginPath(); ctx.arc(0,-22,8,0,7); ctx.fill();
-  // hair
-  ctx.fillStyle='#3a2516'; ctx.beginPath(); ctx.arc(0,-25,8,Math.PI,2*Math.PI); ctx.fill();
-  ctx.fillRect(-8,-26,16,3);
-  // determined eye (looking up at the cola)
-  ctx.fillStyle='#1a0206'; ctx.beginPath(); ctx.arc(3,-23,1.6, 0,7); ctx.fill();
-  // sweat drop when overcharged/tired
-  if(over){ ctx.fillStyle='#8fd3ff'; ctx.beginPath(); ctx.arc(7,-21,2,0,7); ctx.fill(); }
-
-  // ---- FRONT arm (reaching up for the can) ----
-  arm(0,-12, a, shirt, true);
-  // ---- FRONT leg ----
-  leg(0, 14, b, pants, shoe);
-
-  ctx.restore(); // un-flip
-  // tripped stars
-  if(p.stun>0){
-    ctx.fillStyle='#ffd23f'; ctx.font='900 14px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('✦', Math.sin(G.t*12)*8, -34);
-    ctx.fillText('✦', Math.sin(G.t*12+2)*-10, -30);
-  }
-  // overcharge warning ring (about to trip)
-  if(over){ ctx.strokeStyle='rgba(255,80,80,'+(0.4+Math.sin(G.t*20)*0.35)+')'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(0,-2,30,0,7); ctx.stroke(); }
+  ctx.fillStyle='#3a2516'; ctx.beginPath(); ctx.arc(0,-25,8,Math.PI,2*Math.PI); ctx.fill(); ctx.fillRect(-8,-26,16,3);
+  ctx.fillStyle='#1a0206'; ctx.beginPath(); ctx.arc(3,-23,1.6,0,7); ctx.fill();
   ctx.restore();
 
-  // local helpers
+  const up = reach || drink>0;
+  arm(0,-12, a, shirt, up);                      // front arm
+  leg(0,14, b, pants, shoe);                     // front leg
+  ctx.restore(); ctx.restore();
+
   function leg(ox,oy,ang,col,shoec){
     const kneeX=ox+Math.sin(ang)*9, kneeY=oy+12+Math.cos(ang)*3;
     const footX=kneeX+Math.sin(ang*0.6)*7, footY=kneeY+12;
@@ -563,12 +586,50 @@ function drawRunner(p){
     ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(kneeX,kneeY); ctx.lineTo(footX,footY); ctx.stroke();
     ctx.fillStyle=shoec; ctx.beginPath(); ctx.ellipse(footX+2,footY+1,5,3,0,0,7); ctx.fill();
   }
-  function arm(ox,oy,ang,col,reach){
-    const elbowX=ox+Math.sin(ang)* (reach?6:8), elbowY=oy+ (reach? -8 : 8)+Math.cos(ang)*4;
-    const handX=elbowX+Math.sin(ang)*(reach?4:7), handY=elbowY+(reach?-9:9);
+  function arm(ox,oy,ang,col,raise){
+    const elbowX=ox+Math.sin(ang)*(raise?5:8), elbowY=oy+(raise?-9:8)+Math.cos(ang)*4;
+    const handX=elbowX+Math.sin(ang)*(raise?3:7), handY=elbowY+(raise?-10:9);
     ctx.strokeStyle=col; ctx.lineWidth=5; ctx.lineCap='round';
     ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(elbowX,elbowY); ctx.lineTo(handX,handY); ctx.stroke();
     ctx.fillStyle='#f2b48a'; ctx.beginPath(); ctx.arc(handX,handY,3,0,7); ctx.fill();
+  }
+}
+
+// === THE PLAYER: best running man chasing the Coca-Cola ===
+function drawRunner(p, opts){
+  opts=opts||{};
+  const running = (p.boosting||keys[' ']||keys['ArrowUp']) && p.stun<=0;
+  const over = p.carb>0.8;
+  const lean = clamp((p.x-p.targetX)*-0.01,-0.28,0.28) + (running?0.12:0);
+
+  // ground dust / speed lines when sprinting
+  if(running && !opts.drink){
+    ctx.save(); ctx.translate(p.x,p.y);
+    ctx.strokeStyle='rgba(255,244,224,0.5)'; ctx.lineWidth=3; ctx.lineCap='round';
+    for(let i=0;i<3;i++){ const yy=18+i*9, ln=14+Math.sin(G.t*30+i)*8;
+      ctx.beginPath(); ctx.moveTo(-20-i*4, yy); ctx.lineTo(-20-i*4-ln, yy); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  drawHuman(p.x, p.y, 1, over?'#ff3b3b':'#e10916', p.runPhase, lean, p.faceX, true, p.stun>0, opts.drink||0);
+
+  ctx.save(); ctx.translate(p.x,p.y);
+  if(over){ ctx.fillStyle='#8fd3ff'; ctx.beginPath(); ctx.arc(7,-21,2,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(255,80,80,'+(0.4+Math.sin(G.t*20)*0.35)+')'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,-2,30,0,7); ctx.stroke(); }
+  if(p.stun>0){ ctx.fillStyle='#ffd23f'; ctx.font='900 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('✦', Math.sin(G.t*12)*8, -34); ctx.fillText('✦', Math.sin(G.t*12+2)*-10, -30); }
+  ctx.restore();
+}
+
+// === RIVALS visible on the track (the "world" you race) ===
+function drawRivals(){
+  const p=G.player; if(!p) return;
+  for(const r of G.rivals){
+    const ry = p.y - (r.prog - G.scroll);
+    if(ry<-50 || ry>H+50) continue;
+    const rx = clamp(r.x + Math.sin(G.t*2+r.phase)*10, W*0.1, W*0.9);
+    drawHuman(rx, ry, 0.82, r.col, r.runPhase, 0.14, 1, false, false, 0);
   }
 }
 
