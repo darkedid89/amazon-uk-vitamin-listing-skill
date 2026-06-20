@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#c20016" />
+<title>COLA RUSH: Last Can</title>
+<style>
+  :root{
+    --cola-red:#e10916;
+    --cola-dark:#7c0010;
+    --cola-deep:#2a0207;
+    --fizz:#ffd23f;
+    --foam:#fff4e0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;background:#120104;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#fff;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 0%,#3a0309,#120104 70%);}
+  #stage{position:relative;height:100%;aspect-ratio:9/16;max-width:100%;background:#1a0206;box-shadow:0 0 60px rgba(225,9,22,.35);overflow:hidden;touch-action:none;}
+  @media (max-aspect-ratio:9/16){#stage{width:100%;height:auto;}}
+  canvas{display:block;width:100%;height:100%;}
+
+  /* ---- Overlays ---- */
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:28px;gap:18px;z-index:20;
+    background:radial-gradient(circle at 50% 30%,rgba(120,3,12,.65),rgba(8,1,3,.92));
+    backdrop-filter:blur(2px);transition:opacity .25s;}
+  .hidden{display:none!important;}
+  .logo{font-weight:900;letter-spacing:1px;line-height:.95;text-transform:uppercase;}
+  .logo b{display:block;font-size:13vmin;color:var(--cola-red);text-shadow:0 4px 0 var(--cola-dark),0 0 30px rgba(225,9,22,.7);}
+  .logo span{display:block;font-size:5.4vmin;color:var(--fizz);letter-spacing:3px;margin-top:4px;text-shadow:0 2px 8px rgba(0,0,0,.5);}
+  .sub{font-size:3.6vmin;color:#ffd9c2;max-width:84%;line-height:1.45;opacity:.95;}
+  .btn{cursor:pointer;border:none;border-radius:999px;padding:18px 40px;font-size:5vmin;font-weight:900;
+    color:#fff;background:linear-gradient(180deg,#ff2b39,#b40010);text-transform:uppercase;letter-spacing:1px;
+    box-shadow:0 6px 0 #6e000c,0 12px 24px rgba(0,0,0,.45);transition:transform .08s,box-shadow .08s;}
+  .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #6e000c,0 6px 14px rgba(0,0,0,.45);}
+  .btn.gold{background:linear-gradient(180deg,#ffd23f,#e29a00);color:#5c2e00;box-shadow:0 6px 0 #9c6a00,0 12px 24px rgba(0,0,0,.4);}
+  .hint{font-size:3vmin;opacity:.8;margin-top:4px;}
+  .stat-row{display:flex;gap:26px;justify-content:center;margin:6px 0;}
+  .stat{display:flex;flex-direction:column;gap:2px;}
+  .stat .v{font-size:7vmin;font-weight:900;color:var(--fizz);}
+  .stat .l{font-size:2.8vmin;opacity:.75;text-transform:uppercase;letter-spacing:1px;}
+  .result-title{font-size:11vmin;font-weight:900;text-transform:uppercase;line-height:.9;}
+  .win .result-title{color:var(--fizz);text-shadow:0 4px 0 #b97c00,0 0 30px rgba(255,210,63,.6);}
+  .lose .result-title{color:#ff5566;text-shadow:0 4px 0 #6e000c;}
+
+  /* ---- HUD ---- */
+  #hud{position:absolute;inset:0;pointer-events:none;z-index:10;}
+  #topbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px;}
+  .pill{background:rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.15);border-radius:14px;padding:6px 12px;font-weight:800;font-size:3.4vmin;backdrop-filter:blur(3px);}
+  .pill small{display:block;font-size:2.2vmin;opacity:.7;font-weight:600;letter-spacing:1px;}
+  #rankPill{color:var(--fizz);}
+  #carbWrap{position:absolute;left:16px;bottom:18px;width:34px;height:42%;border-radius:18px;
+    border:2px solid rgba(255,255,255,.2);overflow:hidden;background:rgba(0,0,0,.35);}
+  #carbFill{position:absolute;left:0;right:0;bottom:0;height:0%;
+    background:linear-gradient(180deg,#ff3b3b,#ffd23f);transition:height .05s;}
+  #carbLabel{position:absolute;left:6px;bottom:-26px;font-size:2.4vmin;opacity:.7;font-weight:800;letter-spacing:1px;white-space:nowrap;}
+  #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:15;}
+  .tag{position:absolute;bottom:8px;right:12px;font-size:2.2vmin;opacity:.45;z-index:10;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="cv"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div id="topbar">
+        <div class="pill" id="lvlPill"><small>УРОВЕНЬ</small><span id="lvlNum">1</span></div>
+        <div class="pill" id="rankPill"><small>МЕСТО</small><span id="rankNum">6/6</span></div>
+      </div>
+      <div id="carbWrap"><div id="carbFill"></div><div id="carbLabel">ГАЗ</div></div>
+    </div>
+    <div id="flash"></div>
+
+    <!-- MENU -->
+    <div class="screen" id="menu">
+      <div class="logo"><b>Cola<br>Rush</b><span>Last Can Standing</span></div>
+      <div class="sub">Последняя банка газировки — одна на всех. Доберись до неё <b>первым</b> и осуши до дна.</div>
+      <button class="btn" id="playBtn">Играть</button>
+      <div class="hint">Держи палец / ЛКМ — газуй вверх.<br>Веди в сторону — уклоняйся. Не перегрей банку!</div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="screen hidden" id="result">
+      <div class="result-title" id="resTitle">ПОБЕДА!</div>
+      <div class="sub" id="resSub">Ты добрался до банки первым. Глоток победителя!</div>
+      <div class="stat-row">
+        <div class="stat"><span class="v" id="resRank">1</span><span class="l">Место</span></div>
+        <div class="stat"><span class="v" id="resBub">0</span><span class="l">Пузырьки</span></div>
+        <div class="stat"><span class="v" id="resTime">0.0s</span><span class="l">Время</span></div>
+      </div>
+      <button class="btn gold" id="nextBtn">Дальше</button>
+      <button class="btn" id="retryBtn" style="font-size:3.6vmin;padding:12px 28px">Заново</button>
+    </div>
+
+    <div class="tag">prototype build · fictional brand "FIZZ"</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   COLA RUSH: LAST CAN  — hyper-casual vertical race prototype
+   Core mechanic "FIZZ CONTROL": hold to charge carbonation & climb faster,
+   but overcharge = the can pops (stun). Race the "world" (AI cans) to the
+   last can at the top, then drink it. One thumb. 15-30s per level.
+   ========================================================================= */
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+// ---- responsive canvas (9:16 logical space) ----
+let W = 540, H = 960, DPR = 1;
+function resize(){
+  const stage = document.getElementById('stage');
+  const r = stage.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+  cv.width  = Math.round(r.width  * DPR);
+  cv.height = Math.round(r.height * DPR);
+  // logical space scales to a fixed 540 width for consistent tuning
+  W = 540; H = 540 * (r.height / r.width);
+}
+window.addEventListener('resize', resize);
+
+// ---- audio (WebAudio, started on first input) ----
+let AC=null;
+function audio(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function noiseBurst(dur, vol, hp){
+  const ac=audio(); if(!ac)return;
+  const n=ac.createBufferSource();
+  const buf=ac.createBuffer(1, ac.sampleRate*dur, ac.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++){ d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.5); }
+  n.buffer=buf;
+  const f=ac.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||600;
+  const g=ac.createGain(); g.gain.value=vol;
+  n.connect(f); f.connect(g); g.connect(ac.destination);
+  n.start();
+}
+function tone(freq,dur,vol,type){
+  const ac=audio(); if(!ac)return;
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.type=type||'sine'; o.frequency.value=freq;
+  g.gain.setValueAtTime(vol, ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(); o.stop(ac.currentTime+dur);
+}
+const sfx={
+  bubble:()=>tone(700+Math.random()*400,.08,.12,'triangle'),
+  hit:()=>{ tone(120,.18,.2,'sawtooth'); noiseBurst(.12,.12,300); },
+  pop:()=>{ tone(90,.25,.28,'square'); noiseBurst(.18,.18,200); },
+  win:()=>{ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.22,.18,'triangle'),i*110)); },
+  fizz:()=>noiseBurst(.5,.06,1200),
+  glug:()=>tone(220,.12,.14,'sine'),
+};
+
+// ---- game state ----
+const G = {
+  state:'menu',          // menu | play | result
+  level:1,
+  t:0,                   // race time
+  goal:0,                // distance to last can
+  scroll:0,              // how far world has scrolled (== player progress)
+  player:null,
+  rivals:[],
+  obstacles:[],
+  bubbles:[],
+  particles:[],
+  shake:0,
+  flash:0,
+  bubblesGot:0,
+  finishCan:null,        // {y} the last can rendered when near goal
+  won:false,
+};
+
+const NUM_RIVALS = 5; // "one vs world": 5 AI cans
+
+function rnd(a,b){return a+Math.random()*(b-a);}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+
+// ---- level setup ----
+function startLevel(level){
+  G.level = level;
+  G.t = 0; G.scroll = 0; G.shake=0; G.flash=0; G.bubblesGot=0; G.won=false;
+  G.goal = 2600 + level*420;                     // longer each level
+  const baseSpeed = 170 + level*7;               // world cruise speed
+  G.baseSpeed = baseSpeed;
+
+  G.player = {
+    x: W*0.5, targetX: W*0.5, y: H*0.74,
+    speed: baseSpeed, carb: 0.15, stun: 0,
+    boosting:false, hue:0, bob:0,
+  };
+
+  // rivals: progress along the same track, varied pacing
+  G.rivals = [];
+  const names=['Rio','Max','Zoe','Kai','Ivy'];
+  const cols=['#3aa0ff','#9b59ff','#2ee6a6','#ff7ad9','#ffa53a'];
+  for(let i=0;i<NUM_RIVALS;i++){
+    G.rivals.push({
+      name:names[i], col:cols[i],
+      prog:rnd(0,40),
+      base: baseSpeed*rnd(0.86,1.04) + level*rnd(2,6),
+      phase: rnd(0,6.28), amp: rnd(8,26),
+      surge: 0,
+    });
+  }
+
+  // procedural track content
+  G.obstacles=[]; G.bubbles=[];
+  const density = 1 + level*0.12;
+  for(let d=420; d<G.goal-260; d+=rnd(150,250)/density){
+    if(Math.random()<0.78){
+      G.obstacles.push({ d, x: rnd(W*0.16,W*0.84), r: rnd(24,34), hit:false,
+        sway: Math.random()<0.4? rnd(20,46):0, ph:rnd(0,6.28) });
+    }
+    // bubble cluster on a guided line (the "fizz trail")
+    if(Math.random()<0.7){
+      const bx=rnd(W*0.2,W*0.8);
+      const n=Math.floor(rnd(2,5));
+      for(let k=0;k<n;k++){
+        G.bubbles.push({ d:d+k*42, x:bx+rnd(-22,22), r:rnd(11,16), got:false, ph:rnd(0,6.28) });
+      }
+    }
+  }
+  G.finishCan = { d: G.goal };
+  G.particles=[];
+  G.state='play';
+  show('menu',false); show('result',false);
+  document.getElementById('lvlNum').textContent = level;
+  sfx.fizz();
+}
+
+// ---- input ----
+let pointerActive=false;
+function setPointer(active,x){
+  pointerActive=active;
+  if(G.player){
+    G.player.boosting = active;
+    if(x!=null){
+      const r=cv.getBoundingClientRect();
+      G.player.targetX = clamp(((x-r.left)/r.width)*W, W*0.1, W*0.9);
+    }
+  }
+}
+cv.addEventListener('pointerdown',e=>{ audio(); setPointer(true,e.clientX); e.preventDefault(); });
+cv.addEventListener('pointermove',e=>{ if(pointerActive) setPointer(true,e.clientX); });
+window.addEventListener('pointerup',()=> setPointer(false,null));
+window.addEventListener('pointercancel',()=> setPointer(false,null));
+// keyboard (desktop)
+const keys={};
+window.addEventListener('keydown',e=>{ keys[e.key]=true; if(e.key===' '||e.key==='ArrowUp'){audio();} });
+window.addEventListener('keyup',e=>{ keys[e.key]=false; });
+
+// ---- update ----
+let last=performance.now();
+function loop(now){
+  let dt=Math.min((now-last)/1000,0.05); last=now;
+  if(G.state==='play') update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+function update(dt){
+  const p=G.player;
+  G.t += dt;
+
+  // keyboard steering/boost
+  let kBoost = keys[' ']||keys['ArrowUp'];
+  if(keys['ArrowLeft']) p.targetX = clamp(p.targetX-460*dt, W*0.1, W*0.9);
+  if(keys['ArrowRight']) p.targetX = clamp(p.targetX+460*dt, W*0.1, W*0.9);
+  const boosting = (p.boosting||kBoost) && p.stun<=0;
+
+  // ---- FIZZ CONTROL: carbonation meter ----
+  if(boosting){ p.carb += dt*0.62; } else { p.carb -= dt*0.55; }
+  p.carb = clamp(p.carb,0,1);
+  if(p.carb>=1 && p.stun<=0){
+    // overcharge -> POP
+    p.stun = 0.85; p.carb = 0.25;
+    G.shake = 16; G.flash=0.8; sfx.pop();
+    for(let i=0;i<26;i++) spawnParticle(p.x,p.y,'#ffd23f',rnd(2.5,5));
+  }
+
+  // target speed from boost + carbonation efficiency (sweet spot ~0.4-0.8)
+  let target = G.baseSpeed*0.62;
+  if(boosting){
+    const eff = 1 - Math.max(0, p.carb-0.8)*2.2;   // pushing into red loses power
+    target = G.baseSpeed*(1.35*Math.max(0.35,eff));
+  }
+  if(p.stun>0){ p.stun-=dt; target = G.baseSpeed*0.2; }
+  p.speed += (target-p.speed)*Math.min(1,dt*6);
+
+  // advance world
+  const adv = p.speed*dt;
+  G.scroll += adv;
+
+  // steering smoothing
+  p.x += (p.targetX-p.x)*Math.min(1,dt*10);
+  p.bob += dt*10;
+
+  // ---- collisions ----
+  const screenD = d=> p.y - (d - G.scroll);   // y on screen for a track distance d
+  for(const o of G.obstacles){
+    if(o.hit) continue;
+    const oy = screenD(o.d);
+    if(oy<-60||oy>H+60) continue;
+    const ox = o.x + (o.sway? Math.sin(G.t*2+o.ph)*o.sway:0);
+    if(Math.abs(ox-p.x)<o.r+22 && Math.abs(oy-p.y)<o.r+26){
+      o.hit=true; p.speed*=0.4; if(p.stun<=0)p.stun=0.45;
+      G.shake=12; sfx.hit();
+      for(let i=0;i<14;i++) spawnParticle(ox,oy,'#bfe9ff',rnd(2,4));
+    }
+  }
+  for(const b of G.bubbles){
+    if(b.got) continue;
+    const by=screenD(b.d);
+    if(by<-40||by>H+40) continue;
+    const bx=b.x+Math.sin(G.t*3+b.ph)*6;
+    if(Math.abs(bx-p.x)<b.r+24 && Math.abs(by-p.y)<b.r+26){
+      b.got=true; G.bubblesGot++; p.speed+=46; sfx.bubble();
+      for(let i=0;i<6;i++) spawnParticle(bx,by,'#fff4e0',rnd(1.5,3));
+    }
+  }
+
+  // ---- rivals ----
+  for(const r of G.rivals){
+    r.surge += rnd(-1,1)*dt; r.surge=clamp(r.surge,-0.12,0.18);
+    const sp = r.base*(1+r.surge) + Math.sin(G.t*1.6+r.phase)*r.amp;
+    r.prog += sp*dt;
+  }
+
+  // ---- particles ----
+  for(const pt of G.particles){ pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.12; pt.life-=dt; }
+  G.particles=G.particles.filter(pt=>pt.life>0);
+
+  // bubble trail from player when boosting (juice)
+  if(boosting && Math.random()<0.6){
+    spawnParticle(p.x+rnd(-14,14), p.y+26, '#fff4e0', rnd(1.5,3), -0.6);
+  }
+
+  if(G.shake>0) G.shake*=0.86;
+  if(G.flash>0) G.flash-=dt*2.2;
+
+  // ---- finish check ----
+  if(G.scroll>=G.goal){ finish(true); return; }
+  for(const r of G.rivals){ if(r.prog>=G.goal){ finish(false); return; } }
+
+  // HUD
+  updateHUD();
+}
+
+function spawnParticle(x,y,col,r,vy){
+  G.particles.push({x,y,vx:rnd(-1.3,1.3),vy:vy!=null?vy:rnd(-2.5,-0.5),life:rnd(.4,.9),col,r});
+}
+
+function rankOf(){
+  let ahead=0;
+  for(const r of G.rivals){ if(r.prog>G.scroll) ahead++; }
+  return ahead+1;
+}
+function updateHUD(){
+  document.getElementById('carbFill').style.height = (G.player.carb*100)+'%';
+  document.getElementById('carbFill').style.filter = G.player.carb>0.8?'brightness(1.4) saturate(1.4)':'none';
+  document.getElementById('rankNum').textContent = rankOf()+'/'+(NUM_RIVALS+1);
+}
+
+function finish(won){
+  G.won=won; G.state='result';
+  const res=document.getElementById('result');
+  res.classList.remove('win','lose');
+  if(won){
+    res.classList.add('win'); sfx.win();
+    document.getElementById('resTitle').textContent='ПОБЕДА!';
+    document.getElementById('resSub').textContent='Ты дорвался до банки первым. Глоток чемпиона! 🥤';
+    document.getElementById('nextBtn').classList.remove('hidden');
+    // confetti
+    for(let i=0;i<60;i++) G.particles.push({x:rnd(0,W),y:rnd(-H*0.3,0),vx:rnd(-2,2),vy:rnd(1,4),life:rnd(1.5,2.6),
+      col:['#ffd23f','#e10916','#fff','#2ee6a6','#3aa0ff'][i%5],r:rnd(3,6)});
+    // glug finisher
+    [0,1,2,3].forEach(i=>setTimeout(sfx.glug,400+i*130));
+  } else {
+    res.classList.add('lose');
+    document.getElementById('resTitle').textContent='ПЕРЕХВАТИЛИ!';
+    const w=G.rivals.reduce((a,b)=>b.prog>a.prog?b:a);
+    document.getElementById('resSub').textContent=w.name+' выхватил последнюю банку у тебя из-под носа. Ещё разок?';
+    document.getElementById('nextBtn').classList.add('hidden');
+  }
+  document.getElementById('resRank').textContent=rankOf();
+  document.getElementById('resBub').textContent=G.bubblesGot;
+  document.getElementById('resTime').textContent=G.t.toFixed(1)+'s';
+  show('result',true);
+}
+
+// ============================== RENDER =====================================
+function render(){
+  const sw=cv.width, sh=cv.height;
+  const sx=sw/W; // scale logical->device (uniform; H matches aspect)
+  ctx.setTransform(sx,0,0,sx,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  // shake
+  ctx.save();
+  if(G.shake>0.4){ ctx.translate(rnd(-G.shake,G.shake)*0.4, rnd(-G.shake,G.shake)*0.4); }
+
+  drawBackground();
+
+  if(G.state==='play'||G.state==='result'){
+    drawTrack();
+    drawFinish();
+    drawObstaclesAndBubbles();
+    if(G.player) drawPlayer(G.player);
+    drawParticles();
+    drawRivalRail();
+  }
+
+  ctx.restore();
+
+  // flash
+  const f=document.getElementById('flash');
+  f.style.opacity = G.flash>0? Math.min(0.7,G.flash):0;
+}
+
+function drawBackground(){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#4a0710'); g.addColorStop(0.5,'#26040a'); g.addColorStop(1,'#15030a');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // moving carbonation streaks
+  const off=(G.scroll*0.4)%80;
+  ctx.globalAlpha=0.06; ctx.fillStyle='#fff';
+  for(let y=-80+off; y<H; y+=80){
+    for(let x=20;x<W;x+=70){ ctx.beginPath(); ctx.arc(x+((y*0.3)%30),y,3,0,7); ctx.fill(); }
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawTrack(){
+  // side walls (vending-machine shaft vibe)
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.fillRect(0,0,W*0.06,H); ctx.fillRect(W*0.94,0,W*0.06,H);
+  ctx.fillStyle='rgba(255,255,255,0.05)';
+  const off=(G.scroll*0.6)%60;
+  for(let y=-60+off;y<H;y+=60){ ctx.fillRect(W*0.06,y,W*0.88,2); }
+}
+
+function drawFinish(){
+  const fy = G.player ? (G.player.y - (G.goal - G.scroll)) : -9999;
+  if(fy>H+80||fy<-200) return;
+  // vending machine / podium with the LAST CAN
+  ctx.save();
+  ctx.translate(W/2, fy);
+  // glow
+  const gl=ctx.createRadialGradient(0,0,8,0,0,120);
+  gl.addColorStop(0,'rgba(255,210,63,0.55)'); gl.addColorStop(1,'rgba(255,210,63,0)');
+  ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(0,0,120,0,7); ctx.fill();
+  // banner
+  ctx.fillStyle='#ffd23f'; ctx.font='900 26px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('ПОСЛЕДНЯЯ БАНКА', 0, -78);
+  // the big can
+  drawCan(0,-10,46,150,'#e10916','#ffd23f',true);
+  ctx.restore();
+}
+
+function drawObstaclesAndBubbles(){
+  const p=G.player; if(!p) return;
+  const screenD = d=> p.y - (d - G.scroll);
+  // ice-cube obstacles
+  for(const o of G.obstacles){
+    if(o.hit) continue;
+    const oy=screenD(o.d); if(oy<-60||oy>H+60) continue;
+    const ox=o.x+(o.sway?Math.sin(G.t*2+o.ph)*o.sway:0);
+    ctx.save(); ctx.translate(ox,oy); ctx.rotate(Math.sin(o.d*0.01)*0.3);
+    ctx.fillStyle='rgba(190,235,255,0.85)';
+    roundRect(-o.r,-o.r,o.r*2,o.r*2,8); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.55)'; roundRect(-o.r+5,-o.r+5,o.r*0.7,o.r*0.7,4); ctx.fill();
+    ctx.strokeStyle='rgba(120,200,255,0.7)'; ctx.lineWidth=2;
+    roundRect(-o.r,-o.r,o.r*2,o.r*2,8); ctx.stroke();
+    ctx.restore();
+  }
+  // bubbles (the fizz trail / pickups)
+  for(const b of G.bubbles){
+    if(b.got) continue;
+    const by=screenD(b.d); if(by<-40||by>H+40) continue;
+    const bx=b.x+Math.sin(G.t*3+b.ph)*6;
+    const grd=ctx.createRadialGradient(bx-b.r*0.3,by-b.r*0.3,1,bx,by,b.r);
+    grd.addColorStop(0,'rgba(255,255,255,0.95)'); grd.addColorStop(0.6,'rgba(255,244,224,0.6)');
+    grd.addColorStop(1,'rgba(255,210,63,0.15)');
+    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(bx,by,b.r,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+}
+
+function drawPlayer(p){
+  const wob=Math.sin(p.bob)*3;
+  const tilt=(p.x-p.targetX)*-0.004;
+  ctx.save(); ctx.translate(p.x, p.y+wob); ctx.rotate(tilt);
+  // boost flame/foam under can
+  if((p.boosting||keys[' ']||keys['ArrowUp']) && p.stun<=0){
+    const fl=18+Math.sin(G.t*30)*6;
+    const fg=ctx.createLinearGradient(0,24,0,24+fl+30);
+    fg.addColorStop(0,'rgba(255,244,224,0.9)'); fg.addColorStop(1,'rgba(255,210,63,0)');
+    ctx.fillStyle=fg; ctx.beginPath();
+    ctx.moveTo(-16,26); ctx.quadraticCurveTo(0,26+fl+34,16,26); ctx.closePath(); ctx.fill();
+  }
+  const over = p.carb>0.8;
+  drawCan(0,0,24,80, over? '#ff3b3b':'#e10916', '#ffd23f', false, p.stun>0);
+  // overcharge warning ring
+  if(over){ ctx.strokeStyle='rgba(255,80,80,'+(0.5+Math.sin(G.t*20)*0.4)+')'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,38,0,7); ctx.stroke(); }
+  ctx.restore();
+}
+
+// generic cola can
+function drawCan(x,y,w,h,body,band,big,stunned){
+  ctx.save(); ctx.translate(x,y);
+  // body
+  const g=ctx.createLinearGradient(-w,0,w,0);
+  g.addColorStop(0,'#7c0010'); g.addColorStop(0.4,body); g.addColorStop(0.5,'#ff5a64'); g.addColorStop(0.6,body); g.addColorStop(1,'#5c000a');
+  ctx.fillStyle=g; roundRect(-w,-h/2,w*2,h,w*0.5); ctx.fill();
+  // top rim
+  ctx.fillStyle='#d9d9d9'; roundRect(-w,-h/2-6,w*2,10,4); ctx.fill();
+  ctx.fillStyle='#9a9a9a'; roundRect(-w*0.5,-h/2-9,w,5,3); ctx.fill();
+  // bottom
+  ctx.fillStyle='#b8b8b8'; roundRect(-w,h/2-5,w*2,9,4); ctx.fill();
+  // band/label
+  ctx.fillStyle=band; roundRect(-w,-h*0.16,w*2,h*0.32,2); ctx.fill();
+  ctx.fillStyle=body; ctx.font='900 '+(big?26:11)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('FIZZ',0, big?2:1);
+  // highlight
+  ctx.fillStyle='rgba(255,255,255,0.25)'; roundRect(-w*0.7,-h/2+4,w*0.28,h-8,4); ctx.fill();
+  // eyes for character charm
+  if(!big){
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(-7,-h*0.34,4,0,7); ctx.arc(7,-h*0.34,4,0,7); ctx.fill();
+    ctx.fillStyle='#1a0206';
+    const ed=stunned?2:0;
+    ctx.beginPath(); ctx.arc(-7+ed*Math.sin(G.t*20),-h*0.34,2,0,7); ctx.arc(7+ed*Math.sin(G.t*20),-h*0.34,2,0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawParticles(){
+  for(const pt of G.particles){
+    ctx.globalAlpha=Math.max(0,Math.min(1,pt.life*1.4));
+    ctx.fillStyle=pt.col; ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.r,0,7); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+// right-side race rail: you vs the world
+function drawRivalRail(){
+  const rx=W-16, top=70, bot=H-70, len=bot-top;
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(rx,top); ctx.lineTo(rx,bot); ctx.stroke();
+  // finish marker
+  ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(rx,top,5,0,7); ctx.fill();
+  const place=(prog)=>{ const f=clamp(prog/G.goal,0,1); return bot - f*len; };
+  for(const r of G.rivals){
+    const y=place(r.prog);
+    ctx.fillStyle=r.col; ctx.beginPath(); ctx.arc(rx,y,5,0,7); ctx.fill();
+  }
+  // player marker (bigger, white-ringed)
+  const py=place(G.scroll);
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(rx,py,8,0,7); ctx.fill();
+  ctx.fillStyle='#e10916'; ctx.beginPath(); ctx.arc(rx,py,5,0,7); ctx.fill();
+}
+
+// ---- helpers ----
+function roundRect(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function show(id,on){ document.getElementById(id).classList.toggle('hidden',!on); }
+
+// ---- UI wiring ----
+document.getElementById('playBtn').onclick=()=>{ audio(); startLevel(1); };
+document.getElementById('nextBtn').onclick=()=>{ audio(); startLevel(G.level+1); };
+document.getElementById('retryBtn').onclick=()=>{ audio(); startLevel(G.level); };
+
+// init
+resize(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>
