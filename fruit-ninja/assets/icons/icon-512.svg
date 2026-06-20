@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0b1f3a"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <radialGradient id="melon" cx="40%" cy="34%" r="70%">
+      <stop offset="0%" stop-color="#3fbf57"/>
+      <stop offset="100%" stop-color="#176b28"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(256 268)">
+    <circle r="150" fill="url(#melon)"/>
+    <path d="M-150 0 A150 150 0 0 1 150 0" fill="#ff4d6d"/>
+    <path d="M-150 0 A150 150 0 0 1 150 0" fill="none" stroke="#fff" stroke-width="8" opacity="0.6"/>
+    <g fill="#1d1d1d"><circle cx="-60" cy="-40" r="7"/><circle cx="0" cy="-58" r="7"/><circle cx="60" cy="-40" r="7"/><circle cx="-30" cy="-20" r="7"/><circle cx="30" cy="-20" r="7"/></g>
+  </g>
+  <path d="M70 120 L300 360" stroke="#bdeaff" stroke-width="16" stroke-linecap="round" opacity="0.85"/>
+  <path d="M70 120 L300 360" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+</svg>

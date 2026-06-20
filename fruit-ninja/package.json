@@ -1,0 +1,23 @@
+{
+  "name": "ninja-fruit",
+  "version": "1.0.0",
+  "description": "Ninja Fruit — a polished, dependency-free HTML5 fruit-slicing arcade game, ready for web and Capacitor/Cordova mobile builds.",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve . -l 5173",
+    "dev": "npx --yes serve . -l 5173",
+    "serve:python": "python3 -m http.server 5173",
+    "cap:add:android": "cap add android",
+    "cap:add:ios": "cap add ios",
+    "cap:sync": "cap sync",
+    "cap:open:android": "cap open android",
+    "cap:open:ios": "cap open ios"
+  },
+  "keywords": ["html5", "canvas", "game", "fruit-ninja", "arcade", "capacitor", "cordova", "pwa"],
+  "author": "Ninja Fruit Studio",
+  "license": "MIT",
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  },
+  "dependencies": {}
+}

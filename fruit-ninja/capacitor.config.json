@@ -1,0 +1,21 @@
+{
+  "appId": "com.ninjafruit.game",
+  "appName": "Ninja Fruit",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "backgroundColor": "#06101fff",
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#06101f"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#06101f",
+      "showSpinner": false
+    }
+  }
+}

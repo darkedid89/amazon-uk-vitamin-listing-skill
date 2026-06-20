@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#06101f" />
+  <meta name="description" content="Ninja Fruit — slice fruit, dodge bombs, chase combos. A polished HTML5 arcade game." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Ninja Fruit — HTML5 Arcade</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Gameplay canvas (full-bleed, behind the UI). -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Floating effect layers (screen-space overlays). -->
+  <div id="float-layer"></div>
+  <div id="toast-layer"></div>
+  <div id="combo-pop"></div>
+
+  <!-- ============ MAIN MENU ============ -->
+  <section id="screen-menu" class="screen active">
+    <div class="topbar">
+      <span id="menu-coins" class="pill">🪙 0</span>
+      <button id="btn-sound" class="icon-btn" aria-label="Toggle sound">🔊</button>
+    </div>
+    <div class="logo">
+      <span class="logo-ninja">NINJA</span><span class="logo-fruit">FRUIT</span>
+      <span class="logo-tag">slice • combo • survive</span>
+    </div>
+    <div class="menu-buttons">
+      <button id="btn-play" class="btn btn-primary">▶ PLAY</button>
+      <button id="btn-shop" class="btn">🗡 Shop</button>
+      <button id="btn-daily-open" class="btn">🎁 Daily <span id="daily-badge" class="badge">!</span></button>
+      <button id="btn-achievements" class="btn">🏆 Achievements</button>
+      <button id="btn-leaderboard" class="btn">📊 Leaderboard</button>
+    </div>
+    <div class="menu-hs">
+      <div><span>Classic</span><b id="menu-hs-classic">0</b></div>
+      <div><span>Arcade</span><b id="menu-hs-arcade">0</b></div>
+      <div><span>Survival</span><b id="menu-hs-survival">0</b></div>
+    </div>
+  </section>
+
+  <!-- ============ MODE SELECT ============ -->
+  <section id="screen-modeSelect" class="screen">
+    <h2 class="screen-title">Choose Mode</h2>
+    <div class="mode-grid">
+      <button class="mode-card" data-mode="classic">
+        <span class="mode-ico">🍉</span><span class="mode-name">Classic</span>
+        <span class="mode-desc">3 lives. Don't miss fruit. Don't hit bombs.</span>
+      </button>
+      <button class="mode-card" data-mode="arcade">
+        <span class="mode-ico">⚡</span><span class="mode-name">Arcade</span>
+        <span class="mode-desc">60-second score rush with frenzy waves.</span>
+      </button>
+      <button class="mode-card" data-mode="survival">
+        <span class="mode-ico">💀</span><span class="mode-name">Survival</span>
+        <span class="mode-desc">One life. Relentless. How long can you last?</span>
+      </button>
+    </div>
+    <button id="btn-mode-back" class="btn btn-ghost">← Back</button>
+  </section>
+
+  <!-- ============ IN-GAME HUD ============ -->
+  <section id="screen-game" class="screen passthrough">
+    <div class="hud-top">
+      <div class="hud-left">
+        <div id="hud-score" class="hud-score">0</div>
+        <div id="hud-coins" class="hud-coins">🪙 0</div>
+      </div>
+      <div class="hud-center">
+        <div id="hud-timer" class="hud-timer"></div>
+        <div id="hud-lives" class="hud-lives"></div>
+      </div>
+      <div class="hud-right">
+        <span id="hud-fps" class="hud-fps">60 FPS</span>
+        <button id="btn-pause" class="icon-btn">⏸</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PAUSE ============ -->
+  <section id="screen-pause" class="screen modal">
+    <div class="panel">
+      <h2>Paused</h2>
+      <button id="btn-resume" class="btn btn-primary">▶ Resume</button>
+      <button id="btn-pause-restart" class="btn">↻ Restart</button>
+      <button id="btn-pause-quit" class="btn btn-ghost">✕ Quit to Menu</button>
+    </div>
+  </section>
+
+  <!-- ============ GAME OVER / WIN ============ -->
+  <section id="screen-over" class="screen modal">
+    <div class="panel">
+      <h2 id="over-title" class="lose">GAME OVER</h2>
+      <div id="over-highscore" class="hs-flag">★ NEW HIGH SCORE ★</div>
+      <div class="over-score" id="over-score">0</div>
+      <div class="over-stats">
+        <div><span>Best</span><b id="over-best">Best: 0</b></div>
+        <div><span>Combo</span><b id="over-combo">0x</b></div>
+        <div><span>Coins</span><b id="over-coins">+0</b></div>
+      </div>
+      <div id="over-extra" class="over-extra"></div>
+      <button id="btn-retry" class="btn btn-primary">↻ Play Again</button>
+      <button id="btn-over-menu" class="btn btn-ghost">Menu</button>
+    </div>
+  </section>
+
+  <!-- ============ SHOP ============ -->
+  <section id="screen-shop" class="screen scroll">
+    <div class="screen-head">
+      <h2 class="screen-title">Blade Shop</h2>
+      <span id="shop-coins" class="pill">🪙 0</span>
+    </div>
+    <div id="shop-list" class="shop-grid"></div>
+    <button id="btn-shop-back" class="btn btn-ghost">← Back</button>
+  </section>
+
+  <!-- ============ ACHIEVEMENTS ============ -->
+  <section id="screen-achievements" class="screen scroll">
+    <div class="screen-head">
+      <h2 class="screen-title">Achievements</h2>
+      <span id="ach-progress" class="pill">0 / 0</span>
+    </div>
+    <div id="ach-list" class="ach-list"></div>
+    <button id="btn-achievements-back" class="btn btn-ghost">← Back</button>
+  </section>
+
+  <!-- ============ LEADERBOARD ============ -->
+  <section id="screen-leaderboard" class="screen scroll">
+    <h2 class="screen-title">Leaderboard</h2>
+    <div class="tabs">
+      <button class="tab active" data-board="classic">Classic</button>
+      <button class="tab" data-board="arcade">Arcade</button>
+      <button class="tab" data-board="survival">Survival</button>
+    </div>
+    <div id="lb-list" class="lb-list"></div>
+    <button id="btn-leaderboard-back" class="btn btn-ghost">← Back</button>
+  </section>
+
+  <!-- ============ DAILY REWARDS ============ -->
+  <section id="screen-daily" class="screen modal">
+    <div class="panel wide">
+      <h2>Daily Reward</h2>
+      <p class="muted">Log in every day to keep your streak alive!</p>
+      <div id="daily-ladder" class="daily-ladder"></div>
+      <button id="btn-daily-claim" class="btn btn-primary">Claim</button>
+      <button id="btn-daily-back" class="btn btn-ghost">Close</button>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

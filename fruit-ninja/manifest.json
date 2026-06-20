@@ -1,0 +1,15 @@
+{
+  "name": "Ninja Fruit — HTML5 Arcade",
+  "short_name": "Ninja Fruit",
+  "description": "Slice fruit, dodge bombs, chase combos. A polished HTML5 arcade slicer.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#06101f",
+  "theme_color": "#06101f",
+  "categories": ["games", "arcade", "entertainment"],
+  "icons": [
+    { "src": "assets/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "assets/icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Capacitor / Cordova native projects (generated)
+android/
+ios/
+www/
+.gradle/
+*.keystore
+*.jks
+
+# Build / misc
+dist/
+.DS_Store
+*.log

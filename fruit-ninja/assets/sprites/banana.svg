@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 170" width="170" height="170">
+  <defs>
+    <linearGradient id="bananaBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe65c"/>
+      <stop offset="100%" stop-color="#c9a213"/>
+    </linearGradient>
+  </defs>
+  <g transform="rotate(-28 85 85)">
+    <path d="M22 96 Q85 6 148 96 Q120 122 85 116 Q50 110 22 96 Z" fill="url(#bananaBody)"/>
+    <rect x="18" y="90" width="12" height="14" rx="4" fill="#5e4a18"/>
+    <path d="M40 92 Q85 40 130 92" stroke="#fff7c0" stroke-width="4" fill="none" opacity="0.5"/>
+  </g>
+</svg>
