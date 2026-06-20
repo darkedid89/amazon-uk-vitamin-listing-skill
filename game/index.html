@@ -49,6 +49,7 @@
       <div class="sub">Одна банка <b>Coca-Cola</b> на всех. <b>Схвати</b> её, удержи и пей. Чужой утащил — <b>выбей рывком</b> и допей сам!</div>
       <button class="btn" id="playBtn">Играть</button>
       <div class="hint">Веди палец — беги в любую сторону.<br>Кнопка <b>РЫВОК</b> справа снизу — выбить банку / удрать.<br>Набери 100% глотков первым.</div>
+      <div class="hint" id="bestLine" style="opacity:.6"></div>
     </div>
 
     <!-- RESULT -->
@@ -117,16 +118,24 @@ function len(x,y){return Math.hypot(x,y);}
 // ---------- game ----------
 const WIN_METER=100;
 const G={ state:'menu', level:1, t:0, ents:[], player:null, can:null, obstacles:[],
-  particles:[], shake:0, flash:0, endT:0, winner:null, won:false };
+  particles:[], powerups:[], popups:[], shake:0, flash:0, endT:0, countT:0, puTimer:0,
+  winner:null, won:false, best:1, _go:false };
 let arena={x0:0,y0:0,x1:0,y1:0};
 
 function newEntity(o){ return Object.assign({
   x:0,y:0,vx:0,vy:0,r:16,col:'#fff',name:'',isPlayer:false,
   meter:0,dashCd:0,dashT:0,stun:0,steals:0,fx:0,fy:-1,legPhase:rnd(0,6.28),grace:0,
+  speedT:0,frozen:0,
 },o); }
+
+function loadBest(){ try{ G.best=parseInt(localStorage.getItem('colasnatch_best')||'1',10)||1; }catch(e){} updateMenuBest(); }
+function saveBest(){ try{ localStorage.setItem('colasnatch_best',String(G.best)); }catch(e){} }
+function updateMenuBest(){ const el=document.getElementById('bestLine'); if(el) el.textContent=G.best>1?('Лучший уровень: '+G.best):''; }
 
 function startLevel(level){
   G.level=level; G.t=0; G.shake=0; G.flash=0; G.particles=[]; G.won=false; G.winner=null;
+  G.powerups=[]; G.popups=[]; G.puTimer=3.5; G.countT=0; G._go=false;
+  G.best=Math.max(G.best,level); saveBest(); updateMenuBest();
   // arena rect inside stage
   arena={ x0:24, y0:90, x1:W-24, y1:H-118 };
 
@@ -162,9 +171,8 @@ function startLevel(level){
   }
   // the can starts free in the middle
   G.can={ x:(arena.x0+arena.x1)/2, y:(arena.y0+arena.y1)/2, carrier:null, bob:0 };
-  G.state='play';
+  G.state='countdown';
   show('menu',false); show('result',false);
-  sfx.grab();
 }
 
 // ---------- input ----------
@@ -200,14 +208,45 @@ function doDash(e){
   for(let i=0;i<6;i++) spawnP(e.x,e.y,e.col,rnd(2,3.5));
 }
 
+// ---------- power-ups ----------
+function spawnPowerup(){
+  const types=['speed','freeze','chug'];
+  const t=types[Math.floor(Math.random()*types.length)];
+  let x,y,ok,tries=0;
+  do{ x=rnd(arena.x0+40,arena.x1-40); y=rnd(arena.y0+50,arena.y1-70); ok=true; tries++;
+    for(const o of G.obstacles) if(len(x-o.x,y-o.y)<o.r+30) ok=false;
+    if(G.can && len(x-G.can.x,y-G.can.y)<70) ok=false;
+  }while(!ok && tries<20);
+  G.powerups.push({x,y,type:t,bob:rnd(0,6)});
+}
+function applyPowerup(e,pu){
+  if(pu.type==='speed'){ e.speedT=3.4; popup('⚡ РАЗГОН',e.x,e.y-22,'#ffd23f'); tone(700,.12,.14,'triangle'); }
+  else if(pu.type==='freeze'){ for(const o of G.ents) if(o!==e) o.frozen=1.6; popup('❄ СТОП ВСЕМ',e.x,e.y-22,'#8fd3ff'); tone(320,.22,.16,'sine'); }
+  else if(pu.type==='chug'){ e.meter=clamp(e.meter+18,0,WIN_METER); popup('+18% ГЛОТОК',e.x,e.y-22,'#2ee6a6'); sfx.sip(); tone(520,.14,.14,'triangle'); }
+  if(e.isPlayer) flashAt(0.3);
+  for(let i=0;i<10;i++) spawnP(pu.x,pu.y,'#fff',rnd(2,3.5));
+}
+function popup(text,x,y,col){ G.popups.push({text,x,y,col:col||'#fff',life:1.0}); }
+
 // ---------- loop ----------
 let last=performance.now();
 function loop(now){
   let dt=Math.min((now-last)/1000,0.05); last=now;
-  if(G.state==='play') update(dt);
+  if(G.state==='countdown') countdownUpdate(dt);
+  else if(G.state==='play') update(dt);
   else if(G.state==='finishing') endUpdate(dt);
   render();
   requestAnimationFrame(loop);
+}
+
+// ---------- countdown ----------
+function countdownUpdate(dt){
+  const prev=Math.ceil(3-G.countT);
+  G.countT+=dt;
+  const now=Math.ceil(3-G.countT);
+  if(now!==prev && now>=1 && now<=3) tone(440,.12,.16,'square');
+  if(G.countT>=3 && !G._go){ G._go=true; tone(880,.25,.2,'square'); }
+  if(G.countT>=3.7) G.state='play';
 }
 
 // ---------- update ----------
@@ -233,9 +272,12 @@ function update(dt){
     if(e.dashT>0) e.dashT-=dt;
     if(e.stun>0){ e.stun-=dt; e._dx=0; e._dy=0; }
     if(e.grace>0) e.grace-=dt;
+    if(e.speedT>0) e.speedT-=dt;
+    if(e.frozen>0){ e.frozen-=dt; e._dx=0; e._dy=0; e.vx*=0.84; e.vy*=0.84; }
     const carrying = G.can.carrier===e;
-    const spd = carrying? e.maxSpd*0.82 : e.maxSpd;          // carrier is slower (juicy risk)
-    const acc = e.accel;
+    let spd = carrying? e.maxSpd*0.82 : e.maxSpd;            // carrier is slower (juicy risk)
+    if(e.speedT>0) spd*=1.55;                                 // ⚡ power-up
+    const acc = e.speedT>0? e.accel*1.4 : e.accel;
     e.vx += (e._dx||0)*acc*dt;
     e.vy += (e._dy||0)*acc*dt;
     // friction
@@ -295,12 +337,24 @@ function update(dt){
           const dx=c.x-e.x, dy=c.y-e.y, d=len(dx,dy)||1;
           c.vx+=dx/d*220; c.vy+=dy/d*220; c.stun=0.22;
           G.shake=12; sfx.steal(); flashAt(0.5);
+          if(e.isPlayer) popup('ПЕРЕХВАТ!',c.x,c.y-24,'#ffd23f');
+          else if(c.isPlayer) popup('УВЫ!',c.x,c.y-24,'#ff6a78');
           for(let i=0;i<14;i++) spawnP(c.x,c.y,e.col,rnd(2,4));
           break;
         }
       }
     }
   }
+
+  // ---- power-ups ----
+  G.puTimer-=dt;
+  if(G.puTimer<=0 && G.powerups.length<2){ spawnPowerup(); G.puTimer=rnd(5.5,8.5); }
+  for(let i=G.powerups.length-1;i>=0;i--){ const pu=G.powerups[i]; pu.bob+=dt*4;
+    for(const e of G.ents){ if(len(e.x-pu.x,e.y-pu.y)<e.r+15){ applyPowerup(e,pu); G.powerups.splice(i,1); break; } }
+  }
+  // popups
+  for(const u of G.popups){ u.y-=30*dt; u.life-=dt; }
+  G.popups=G.popups.filter(u=>u.life>0);
 
   // particles
   for(const p of G.particles){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life-=dt; }
@@ -333,6 +387,13 @@ function aiThink(e,dt){
     const d=len(c.x-e.x,c.y-e.y);
     if(d<74 && e.dashCd<=0 && Math.random()<0.08+e.aggro*0.06) doDash(e);
   }
+  // opportunistic power-up grab (some rivals divert toward a nearby one)
+  if(e._puBias && G.powerups.indexOf(e._puBias)<0) e._puBias=null;
+  if(!e._puBias && G.powerups.length){
+    let pp=null,pd=1e9; for(const pu of G.powerups){ const dd=len(pu.x-e.x,pu.y-e.y); if(dd<pd){pd=dd;pp=pu;} }
+    if(pp && pd<150 && Math.random()<0.02+e.aggro*0.03) e._puBias=pp;
+  }
+  if(e._puBias){ tx=e._puBias.x; ty=e._puBias.y; want=0.95; }
   let dx=tx-e.x, dy=ty-e.y, d=len(dx,dy)||1;
   // small noise so they don't move identically
   dx+=Math.sin(G.t*2+e.legPhase)*0.15*d; dy+=Math.cos(G.t*2+e.legPhase)*0.15*d;
@@ -391,13 +452,16 @@ function render(){
   if(G.state!=='menu'){
     drawArena();
     drawObstacles();
+    drawPowerups();
     if(G.can && !G.can.carrier) drawFreeCan();
     // draw entities sorted by y (depth)
     const sorted=[...G.ents].sort((a,b)=>a.y-b.y);
     for(const e of sorted) drawRunner(e);
     drawParticles();
+    drawPopups();
     drawHUD();
     if(G.state==='finishing') drawEndBanner();
+    if(G.state==='countdown') drawCountdown();
   }
   ctx.restore();
   document.getElementById('flash').style.opacity=G.flash>0?Math.min(.6,G.flash):0;
@@ -458,6 +522,12 @@ function drawRunner(e){
   ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=2; ctx.stroke();
   // head (offset toward facing)
   ctx.fillStyle='#f2b48a'; ctx.beginPath(); ctx.arc(e.x+e.fx*e.r*0.45, e.y+e.fy*e.r*0.45, e.r*0.5,0,7); ctx.fill();
+  // frozen overlay
+  if(e.frozen>0){ ctx.fillStyle='rgba(143,211,255,0.4)'; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+2,0,7); ctx.fill();
+    ctx.strokeStyle='#bfe9ff'; ctx.lineWidth=2; ctx.stroke(); }
+  // speed aura
+  if(e.speedT>0){ ctx.strokeStyle='rgba(255,210,63,'+(0.4+Math.sin(G.t*22)*0.3)+')'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(e.x,e.y,e.r+5,0,7); ctx.stroke(); }
   // player ring
   if(e.isPlayer){ ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+3,0,7); ctx.stroke(); }
   // carrier: glow ring + drink-progress ring + the can on top
@@ -496,6 +566,35 @@ function drawParticles(){
   for(const p of G.particles){ ctx.globalAlpha=Math.max(0,Math.min(1,p.life*1.4));
     ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); }
   ctx.globalAlpha=1;
+}
+function drawPowerups(){
+  for(const pu of G.powerups){ const y=pu.y+Math.sin(pu.bob)*3;
+    const c=pu.type==='speed'?'#ffd23f':pu.type==='freeze'?'#8fd3ff':'#2ee6a6';
+    const gl=ctx.createRadialGradient(pu.x,y,2,pu.x,y,30); gl.addColorStop(0,c); gl.addColorStop(1,c+'00');
+    ctx.globalAlpha=.5; ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(pu.x,y,30,0,7); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle=c; ctx.beginPath(); ctx.arc(pu.x,y,15,0,7); ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='#1a0206'; ctx.font='900 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(pu.type==='speed'?'⚡':pu.type==='freeze'?'❄':'🥤', pu.x, y+1); ctx.textBaseline='alphabetic';
+  }
+}
+function drawPopups(){
+  for(const u of G.popups){ ctx.globalAlpha=Math.min(1,u.life*1.4);
+    ctx.fillStyle=u.col; ctx.font='900 15px sans-serif'; ctx.textAlign='center';
+    ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=3; ctx.strokeText(u.text,u.x,u.y);
+    ctx.fillText(u.text,u.x,u.y); }
+  ctx.globalAlpha=1;
+}
+function drawCountdown(){
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,W,H);
+  const go=G.countT>=3, n=Math.ceil(3-G.countT);
+  const frac=G.countT-Math.floor(G.countT), pulse=1+(1-frac)*0.5;
+  ctx.save(); ctx.translate(W/2,H*0.42); ctx.scale(pulse,pulse);
+  ctx.fillStyle=go?'#2ee6a6':'#ffd23f'; ctx.font='900 70px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.strokeStyle='rgba(0,0,0,0.45)'; ctx.lineWidth=6;
+  const txt=go?'GO!':String(Math.max(1,n));
+  ctx.strokeText(txt,0,0); ctx.fillText(txt,0,0);
+  ctx.restore(); ctx.textBaseline='alphabetic';
 }
 
 function drawHUD(){
@@ -559,7 +658,7 @@ document.getElementById('playBtn').onclick=()=>{ audio(); startLevel(1); };
 document.getElementById('nextBtn').onclick=()=>{ audio(); startLevel(G.level+1); };
 document.getElementById('retryBtn').onclick=()=>{ audio(); startLevel(G.level); };
 
-resize(); updateDashBtnPos(); requestAnimationFrame(loop);
+resize(); updateDashBtnPos(); loadBest(); requestAnimationFrame(loop);
 </script>
 </body>
 </html>
